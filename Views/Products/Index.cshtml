@@ -1,0 +1,33 @@
+@model IEnumerable<Product>
+@{
+    ViewBag.Title = "Browse Products";
+}
+<h2>Browse Products</h2>
+<table>
+    <tr>
+        <th>Image</th>
+        <th>Name</th>
+        <th>Category</th>
+        <th>Price</th>
+        <th></th>
+    </tr>
+    @foreach (var item in Model)
+    {
+        <tr>
+            <td>
+                @if (!string.IsNullOrEmpty(item.ImageUrl))
+                {
+                    <img src="@item.ImageUrl" alt="@item.Name" style="width:80px;" />
+                }
+            </td>
+            <td>@item.Name</td>
+            <td>@item.Category</td>
+            <td>$@item.Price</td>
+            <td><a href="/Products/Details/@item.Id">Details</a></td>
+        </tr>
+    }
+</table>
+@if (User.IsInRole("Admin"))
+{
+    <a href="/Products/Create">Add New Product</a>
+}

@@ -1,0 +1,24 @@
+@model IEnumerable<Category>
+@{
+    ViewBag.Title = "Categories";
+}
+<h2>Categories</h2>
+<table>
+    <tr>
+        <th>Name</th>
+        <th>Description</th>
+        <th></th>
+    </tr>
+    @foreach (var cat in Model)
+    {
+        <tr>
+            <td>@cat.Name</td>
+            <td>@cat.Description</td>
+            <td>
+                <a href="/Categories/Edit/@cat.Id">Edit</a> |
+                <a href="/Categories/Delete/@cat.Id" onclick="return confirm('Are you sure?')">Delete</a>
+            </td>
+        </tr>
+    }
+</table>
+<a href="/Categories/Create">Add New Category</a>

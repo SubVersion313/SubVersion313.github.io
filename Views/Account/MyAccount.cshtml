@@ -1,0 +1,18 @@
+@model User
+@{
+    ViewBag.Title = "My Account";
+}
+
+<h2>My Account</h2>
+<p><strong>Name:</strong> @Model.NameUser</p>
+<p><strong>Email:</strong> @Model.Email</p>
+<p><strong>Address:</strong> @Model.Address</p>
+<p><strong>Registered:</strong> @Model.CreatedAt</p>
+@if (User.IsInRole("Admin"))
+{
+    <p><strong>Role:</strong> Admin</p>
+}
+else
+{
+    <p><strong>Role:</strong> User</p>
+}
