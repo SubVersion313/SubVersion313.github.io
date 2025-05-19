@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Add Product | AL-HARRIFA STORE</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="3be07d4d222f06f0333810def3d4dfd7-removebg-preview.png" type="image/png">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700&display=swap" rel="stylesheet">
+    <link href="home.css" rel="stylesheet">
+</head>
+<body>
+    <header>
+        <div class="logo">
+            <img src="Logo.png" alt="Logo">
+            <h2>AL-HARRIFA</h2>
+        </div>
+        <nav>
+            <a href="home.html">Home</a>
+            <a href="my_products.html">My Products</a>
+            <a href="my_purchases.html">My Purchases</a>
+            <a href="products_list.html">Browse Products</a>
+            <a href="login.html">Login</a>
+        </nav>
+    </header>
+    <div class="container" style="max-width: 600px; margin: 2rem auto;">
+        <h1 style="color: var(--primary-color); font-family: 'Poppins', sans-serif;">Add New Product</h1>
+        <form id="add-product-form" style="background: #fff; border-radius: 10px; box-shadow: 0 2px 12px var(--shadow-color); padding: 2rem;">
+            <label>Name:<br>
+                <input class="input" type="text" name="name" required style="width:100%;margin-bottom:1rem;">
+            </label>
+            <label>Price:<br>
+                <input class="input" type="number" name="price" step="0.01" required style="width:100%;margin-bottom:1rem;">
+            </label>
+            <label>Category:<br>
+                <select class="input" name="category" required style="width:100%;margin-bottom:1rem;">
+                    <option value="">Select Category</option>
+                    <option value="homeDecor">Home Decor</option>
+                    <option value="artCollectibles">Art & Collectibles</option>
+                    <option value="accessories">Accessories</option>
+                    <option value="paperGoods">Paper Goods</option>
+                    <option value="toys">Toys</option>
+                    <option value="fiberCrafts">Fiber Crafts</option>
+                </select>
+            </label>
+            <label>Image URL:<br>
+                <input class="input" type="text" name="img" placeholder="image.jpg" required style="width:100%;margin-bottom:1rem;">
+            </label>
+            <label>Details (JSON):<br>
+                <textarea class="input" name="details" placeholder='{"Material":"Cotton", "Dimensions":"A4", "Features":"Handmade"}' required style="width:100%;margin-bottom:1rem;"></textarea>
+            </label>
+            <button class="btn" type="submit" style="width:100%;background:var(--primary-color);color:#fff;">Add Product</button>
+        </form>
+        <div id="add-product-message" style="margin-top:1rem;color:var(--secondary-color);"></div>
+    </div>
+    <footer>
+        <p>&copy; 2025 SC AL-HARRIFA STORE. All rights reserved.</p>
+    </footer>
+    <script>
+    // On submit, add product to window.products (simulate)
+    document.getElementById('add-product-form').onsubmit = function(e) {
+        e.preventDefault();
+        const fd = new FormData(this);
+        let detailsObj;
+        try {
+            detailsObj = JSON.parse(fd.get('details'));
+        } catch {
+            document.getElementById('add-product-message').textContent = "Invalid JSON in Details!";
+            return;
+        }
+        const product = {
+            id: Date.now(),
+            name: fd.get('name'),
+            price: parseFloat(fd.get('price')),
+            category: fd.get('category'),
+            img: fd.get('img'),
+            details: detailsObj
+        };
+        if (!window.products) window.products = {};
+        if (!window.products[product.category]) window.products[product.category] = [];
+        window.products[product.category].push(product);
+        document.getElementById('add-product-message').textContent = "Product added! (Demo only - will not persist after reload)";
+        this.reset();
+    };
+    </script>
+</body>
+</html>

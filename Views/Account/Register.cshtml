@@ -1,0 +1,29 @@
+@model User
+@{
+    ViewBag.Title = "Register";
+}
+
+<h2>Register</h2>
+<form method="post" asp-action="Register">
+    @Html.AntiForgeryToken()
+    <label>Name:<br />
+        <input type="text" asp-for="NameUser" required />
+    </label><br />
+    <label>Email:<br />
+        <input type="email" asp-for="Email" required />
+    </label><br />
+    <label>Password:<br />
+        <input type="password" asp-for="PasswordUser" required />
+    </label><br />
+    <label>Confirm Password:<br />
+        <input type="password" name="PasswordConfirm" required />
+    </label><br />
+    <label>Address:<br />
+        <input type="text" asp-for="Address" />
+    </label><br />
+    <button type="submit">Register</button>
+    <span asp-validation-summary="All"></span>
+</form>
+<p>
+    Already have an account? <a href="/Account/Login">Login here</a>
+</p>

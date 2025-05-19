@@ -1,0 +1,31 @@
+@model IEnumerable<Order>
+@{
+    ViewBag.Title = "My Orders";
+}
+<h2>My Orders</h2>
+@if (!Model.Any())
+{
+    <p>You have no orders.</p>
+}
+else
+{
+    <table>
+        <tr>
+            <th>Order #</th>
+            <th>Status</th>
+            <th>Total</th>
+            <th>Date</th>
+            <th></th>
+        </tr>
+        @foreach (var order in Model)
+        {
+            <tr>
+                <td>@order.Id</td>
+                <td>@order.Status</td>
+                <td>$@order.TotalPrice</td>
+                <td>@order.CreatedAt</td>
+                <td><a href="/Orders/Details/@order.Id">Details</a></td>
+            </tr>
+        }
+    </table>
+}

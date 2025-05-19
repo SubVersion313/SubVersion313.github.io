@@ -1,0 +1,33 @@
+@model Order
+@{
+    ViewBag.Title = "Order Details";
+}
+<h2>Order #@Model.Id</h2>
+<p><strong>Status:</strong> @Model.Status</p>
+<p><strong>Order Date:</strong> @Model.CreatedAt</p>
+<p><strong>Total:</strong> $@Model.TotalPrice</p>
+<h3>Items</h3>
+@if (Model.OrderItems != null && Model.OrderItems.Any())
+{
+    <table>
+        <tr>
+            <th>Product</th>
+            <th>Qty</th>
+            <th>Price (each)</th>
+            <th>Subtotal</th>
+        </tr>
+        @foreach (var item in Model.OrderItems)
+        {
+            <tr>
+                <td>@item.Product.Name</td>
+                <td>@item.Quantity</td>
+                <td>$@item.Price</td>
+                <td>$@(item.Price * item.Quantity)</td>
+            </tr>
+        }
+    </table>
+}
+else
+{
+    <p>No items found for this order.</p>
+}
