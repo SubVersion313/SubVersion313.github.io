@@ -1,0 +1,384 @@
+﻿@using Newtonsoft.Json;
+@inject IHttpContextAccessor HttpContextAccessor
+@{
+    Layout = "_Layout_main";
+}
+@{
+    var permissions = new List<KeyValuePair<string, string>>();
+
+    // استرجاع الصلاحيات من الجلسة إذا كانت موجودة
+    var permissionsJson = HttpContextAccessor.HttpContext.Session.GetString("UserPermissions");
+
+    if (!string.IsNullOrEmpty(permissionsJson))
+    {
+        permissions = JsonConvert.DeserializeObject<List<KeyValuePair<string, string>>>(permissionsJson);
+    }
+
+    // التحقق من وجود صلاحيات معينة
+    bool canRole = permissions.Any(c => c.Key == "Permission" && c.Value == "Permissions.Role.View");
+    bool canEdit = permissions.Any(c => c.Key == "Permission" && c.Value == "Permissions.StaffManagement.Edit");
+    bool canDelete = permissions.Any(c => c.Key == "Permission" && c.Value == "Permissions.StaffManagement.Delete");
+}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-lg-12 pt-3">
+            <header class="header-filter">
+                <div class="group-filter d-flex">
+                </div>
+                <div class="date">
+                    @ViewBag.DisplayCurrntDate
+                </div>
+@*                 <a class="btn btn-master d-flex align-items-center rounded-pill btn-Create-Order" asp-controller="CreateOrders" asp-action="Index">
+                    <i class="fa-solid fa-plus me-2"></i>Create Order
+                </a> *@
+                <div class="dropdown">
+                    <button class="btn btn-primary dropdown-toggle rounded-pill btn-master" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="fa-solid fa-plus me-2"></i> Create
+                    </button>
+                    <ul class="dropdown-menu bg-primary text-white">
+                        @if (permissions != null && permissions.Any(c => c.Key == "Permission" && c.Value == "Permissions.CreateOrders.Create"))
+                        {
+                            <li><a class="dropdown-item text-white" asp-controller="CreateOrders" asp-action="Index"><i class="fa-solid fa-plus me-2"></i> Order</a></li>
+                        }
+                        @if (permissions != null && permissions.Any(c => c.Key == "Permission" && c.Value == "Permissions.InspectionOrder.Create"))
+                        {
+                            <li><a class="dropdown-item text-white" asp-controller="InspectionOrder" asp-action="InspectionOrder"><i class="fa-solid fa-plus me-2"></i> Room inspiction</a></li>
+                        }
+                    </ul>
+                </div>
+            </header>
+        </div>
+    </div>
+</div>
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-lg-12"> </div>
+        <div class="col-lg-12 pt-3">
+            <header class="header-filter flex-column">
+                <h4 class="fw-bold">Analysis </h4>
+                <div class="container-fluid">
+                    <div class="row">
+                        @*                         <div class="col-lg-3 col-md-6 col-sm-12 mb-3">
+                        <div class="form-group">
+                        <label class="mb-2" for="exampleFormControlSelect1">Period Date</label>
+                        <select id="ddlFilterPeriod" class="form-select" aria-label="Default select example" onchange="changePeriod()">
+                        <option selected value="0">Select Period  </option>
+                        <option value="1">Today</option>
+                        <option value="2">This Week</option>
+                        <option value="3">Before Week </option>
+                        <option value="4">Before Month</option>
+                        <option value="5">Before Year</option>
+
+                        </select>
+                        </div>
+                        </div> *@
+                        <div class="col-lg-3 col-md-6 col-sm-12 mb-3">
+                            <div class="form-group">
+                                <label class="mb-2" for="exampleFormControlSelect1">start Date :</label>
+                                <input id="startDate" class="form-control rounded-pill" type="date">
+                            </div>
+                        </div>
+                        <div class="col-lg-3 col-md-6 col-sm-12 mb-3">
+                            <div class="form-group">
+                                <label class="mb-2" for="exampleFormControlSelect1">end Date :</label>
+                                <input id="endDate" class="form-control rounded-pill" type="date">
+                            </div>
+                        </div>
+                        <div class="col-lg-3 col-md-6 col-sm-12 mb-3">
+                            <label class="mb-2" for="exampleFormControlSelect1"> &nbsp;</label>
+                            <div class="d-flex justify-content-around">
+                                <a id="btnFilterData" class="btn btn-master d-flex align-items-center rounded-pill btn-Create-Order" onclick="drawChart()">
+                                    Apply Filter
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </header>
+        </div>
+    </div>
+</div>
+<div class="pt-3" id="pageMasterLoad">
+    <div class="container-fluid">
+        <div class="row">
+
+
+            <div id="chartsRow" class="row"></div>
+           <div id="ItemsChart" style="max-width: 650px; margin: 35px auto;"></div>
+
+
+            @*             <div class="col-lg-6 mb-3">
+            <div class="card">
+            <div class="card-header p-3 mx-2 fw-bold">Items </div>
+            <div class="card-body">
+            <div id="ItemsChart"></div>
+            </div>
+            </div>
+            </div> *@
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+
+        // $(document).ready(function () {
+        //     var options = {
+        //         series: [250, 188, 15, 11, 2926],
+
+        //         colors: ["#845fc3", "#c28252", "#6ac66a", "#5899be", "#37a210", "#b85443"],
+
+        //         labels: ["Completed", "In Process", "ReOpen", "Hold", "Closed"],
+        //         legend: {
+        //             show: true,
+        //             position: "bottom"
+        //         },
+        //         chart: {
+        //             type: "donut"
+        //         }
+        //     };
+
+        //     var chart = new ApexCharts(document.querySelector("#HousekeepingChart"), options);
+        //     chart.render();
+
+
+        //     var options = {
+        //         series: [577, 80, 15, 22, 528],
+
+        //         colors: ["#845fc3", "#c28252", "#6ac66a", "#5899be", "#37a210", "#b85443"],
+
+        //         labels: ["Completed", "In Process", "ReOpen", "Hold", "Closed"],
+        //         legend: {
+        //             show: true,
+        //             position: "bottom"
+        //         },
+        //         chart: {
+        //             type: "donut"
+        //         }
+        //     };
+
+        //     var chart = new ApexCharts(document.querySelector("#MaintenanceChart"), options);
+        //     chart.render();
+
+
+        //     var options = {
+        //         series: [5, 4, 2, 2, 1],
+
+        //         colors: ["#845fc3", "#c28252", "#6ac66a", "#5899be", "#37a210", "#b85443"],
+
+        //         labels: ["Completed", "In Process", "ReOpen", "Hold", "Closed"],
+        //         legend: {
+        //             show: true,
+        //             position: "bottom"
+        //         },
+        //         chart: {
+        //             type: "donut"
+        //         }
+        //     };
+        //     var chart = new ApexCharts(document.querySelector("#ManagementChart"), options);
+        //     chart.render();
+
+        //     var options = {
+        //         series: [{
+        //             name: 'Total Count',
+        //             data: [44, 55, 41, 67, 22, 43, 21]
+        //         }, {
+        //             name: 'Remaining Count',
+        //             data: [13, 23, 20, 8, 13, 27, 33]
+        //         }],
+
+        //         colors: ["#845fc3", "#c28252", "#6ac66a", "#5899be", "#37a210", "#b85443"],
+
+        //         chart: {
+        //             type: 'bar',
+        //             height: 350,
+        //             stacked: true,
+        //             stackType: '100%'
+        //         },
+        //         responsive: [{
+        //             breakpoint: 480,
+        //             options: {
+        //                 legend: {
+        //                     position: 'bottom',
+        //                     offsetX: -10,
+        //                     offsetY: 0
+        //                 }
+        //             }
+        //         }],
+        //         xaxis: {
+        //             categories: ['Makeup', 'Water', 'Blanket', 'Bath Towel', 'Other Housekeeping', 'Other Maintenance',
+        //                 'Iron'
+        //             ],
+        //         },
+        //         fill: {
+        //             opacity: 1
+        //         },
+        //         legend: {
+        //             position: 'bottom',
+
+        //         },
+        //     };
+
+        //     var chart = new ApexCharts(document.querySelector("#ItemsChart"), options);
+        //     chart.render();
+        // });
+
+        $(document).ready(function () {
+
+            var endDateObj = new Date();
+            var startDateObj = new Date(endDateObj);
+            startDateObj.setMonth(startDateObj.getMonth() - 1);
+
+            $('#startDate').val(formatDateLoading(startDateObj));
+            $('#endDate').val(formatDateLoading(endDateObj));
+
+        });
+        function formatDateLoading(date) {
+            var d = new Date(date),
+                month = '' + (d.getMonth() + 1),
+                day = '' + d.getDate(),
+                year = d.getFullYear();
+
+            if (month.length < 2) month = '0' + month;
+            if (day.length < 2) day = '0' + day;
+
+            return [year, month, day].join('-');
+        }
+        function formatDate(date) {
+            var d = new Date(date),
+                month = '' + (d.getMonth() + 1),
+                day = '' + d.getDate(),
+                year = d.getFullYear();
+
+            if (month.length < 2) month = '0' + month;
+            if (day.length < 2) day = '0' + day;
+
+            return [year, month, day].join('');
+        }
+        function drawChart() {
+            var startDate = $('#startDate').val();
+            var endDate = $('#endDate').val();
+
+            startDate = formatDate(startDate);
+            endDate = formatDate(endDate);
+            //alert("1");
+            drawChartDepartment(startDate, endDate);
+            //alert("2");
+            drawChartItems(startDate, endDate);
+        }
+        function drawChartDepartment(startDate, endDate) {
+
+            //console.log('startDate: ' + startDate + ' endDate: ' + endDate);
+            $.ajax({
+                url: '@Url.Action("AnalysisDepartment", "Analysis")',
+                type: 'POST',
+                data: { startDate: startDate, endDate: endDate },
+                success: function (response) {
+                    if (response.success) {
+                        $('#chartsRow').empty(); // Clear existing charts
+                        response.returnData.forEach(chartData => {
+
+                            console.log("Chart Data:", chartData); // Debugging log
+
+                            var cardHtml = `<div class="col-lg-4 mb-3">
+                                                                <div class="card">
+                                                                    <div class="card-header p-3 mx-2 fw-bold">${chartData.departmentName}</div>
+                                                                    <div class="card-body">
+                                                                        <div id="chart-${chartData.departmentID}" class="chartsContainer"></div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>`;
+
+                            $('#chartsRow').append(cardHtml);
+
+                            var options = {
+                                series: chartData.series,
+                                chart: {
+                                    type: "donut"
+                                },
+                                labels: chartData.labels,
+                                colors: chartData.colors,
+                                legend: {
+                                    show: true,
+                                    position: "bottom"
+                                },
+                                title: {
+                                    text: chartData.departmentName,
+                                    align: 'center'
+                                }
+                            };
+
+                            var chartElement = document.querySelector(`#chart-${chartData.departmentID}`);
+                            var chart = new ApexCharts(chartElement, options);
+                            chart.render();
+                        });
+                    } else {
+                        console.error("Error: " + response.returnData);
+                    }
+                },
+                error: function (xhr, status, error) {
+                    console.error("Error: " + error);
+                }
+            });
+        }
+        function drawChartItems(startDate, endDate) {
+            $('#ItemsChart').empty(); // Clear existing charts
+            $.ajax({
+                url: '@Url.Action("AnalysisItems", "Analysis")',
+                type: 'POST',
+                data: { startDate: startDate, endDate: endDate },
+                success: function (response) {
+                    if (response.success) {
+                        var options = {
+                            series: [{
+                                name: 'Quantity',
+                                data: response.data.totalQtys
+                            }, {
+                                name: 'Record Count',
+                                data: response.data.recordCounts
+
+                            }],
+                            colors: ["#845fc3", "#c28252"],
+                            chart: {
+                                type: 'bar',
+                                height: 350,
+                                stacked: true,
+                               //stackType: '100%'
+
+                            },
+                            responsive: [{
+                                breakpoint: 480,
+                                options: {
+                                    legend: {
+                                        position: 'bottom',
+                                        offsetX: -10,
+                                        offsetY: 0
+                                    }
+                                }
+                            }],
+                            xaxis: {
+                                categories: response.data.itemNames
+                            },
+                            fill: {
+                                opacity: 1
+                            },
+                            legend: {
+                                position: 'bottom'
+                            }
+                        };
+
+                        var chart = new ApexCharts(document.querySelector("#ItemsChart"), options);
+                        chart.render();
+
+                    } else {
+                        console.error("Error: " + response.message);
+                    }
+                },
+                error: function (xhr, status, error) {
+                    console.error("Error: " + error);
+                }
+            });
+        }
+
+    </script>
+}

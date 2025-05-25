@@ -1,0 +1,484 @@
+﻿@using Newtonsoft.Json;
+@inject IHttpContextAccessor HttpContextAccessor
+@{
+    Layout = "_Layout_main";
+}
+@{
+    var permissions = new List<KeyValuePair<string, string>>();
+
+    // استرجاع الصلاحيات من الجلسة إذا كانت موجودة
+    var permissionsJson = HttpContextAccessor.HttpContext.Session.GetString("UserPermissions");
+
+    if (!string.IsNullOrEmpty(permissionsJson))
+    {
+        permissions = JsonConvert.DeserializeObject<List<KeyValuePair<string, string>>>(permissionsJson);
+    }
+
+    // التحقق من وجود صلاحيات معينة
+    bool canRole = permissions.Any(c => c.Key == "Permission" && c.Value == "Permissions.Role.View");
+    bool canEdit = permissions.Any(c => c.Key == "Permission" && c.Value == "Permissions.StaffManagement.Edit");
+    bool canDelete = permissions.Any(c => c.Key == "Permission" && c.Value == "Permissions.StaffManagement.Delete");
+}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-lg-12 pt-3">
+            <header class="header-filter">
+                <div class="group-filter d-flex">
+                    <div class="input-group me-3">
+                        <input class="form-control" type="search" placeholder="Search" aria-label="Recipient's username" aria-describedby="button-addon2">
+                        <button class="btn btn-outline-master" id="button-addon2" type="button"> <i class="fa-solid fa-magnifying-glass"></i></button>
+                    </div>
+                    <button class="btn btn-outline-master d-flex align-items-center" type="button" data-bs-toggle="modal" data-bs-target="#exampleModal"> <i class="fa-solid fa-arrow-down-wide-short me-2"></i>Filter</button>
+                </div>
+                <div class="date">
+                    @ViewBag.DisplayCurrntDate
+                </div>
+@*                 <a class="btn btn-master d-flex align-items-center rounded-pill btn-Create-Order" asp-controller="CreateOrders" asp-action="Index">
+                    <i class="fa-solid fa-plus me-2"></i>Create Order
+                </a> *@
+                <div class="dropdown">
+                    <button class="btn btn-primary dropdown-toggle rounded-pill btn-master" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="fa-solid fa-plus me-2"></i> Create
+                    </button>
+                    <ul class="dropdown-menu bg-primary text-white">
+                        @if (permissions != null && permissions.Any(c => c.Key == "Permission" && c.Value == "Permissions.CreateOrders.Create"))
+                        {
+                            <li><a class="dropdown-item text-white" asp-controller="CreateOrders" asp-action="Index"><i class="fa-solid fa-plus me-2"></i> Order</a></li>
+                        }
+                        @if (permissions != null && permissions.Any(c => c.Key == "Permission" && c.Value == "Permissions.InspectionOrder.Create"))
+                        {
+                            <li><a class="dropdown-item text-white" asp-controller="InspectionOrder" asp-action="InspectionOrder"><i class="fa-solid fa-plus me-2"></i> Room inspiction</a></li>
+                        }
+                    </ul>
+                </div>
+            </header>
+        </div>
+    </div>
+</div>
+<div id="pageMasterLoad">
+    <div class="HomeDashboard">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-lg-12 mb-5">
+                    <div class="overview-Orders mb-5">
+                        <div class="d-flex justify-content-between mb-4">
+                            <h4>Departments</h4>
+                            <button class="rounded-pill px-4 btn btn-outline-master" data-bs-toggle="modal" data-bs-target="#AddDepartment"> <i class="fa-solid fa-plus me-2"></i>Add Department</button>
+                        </div>
+                        <table class="table table-responsive data-Tables" id="dataTablesDepartment">
+                            <thead>
+                                <tr>
+                                    <th scope="col"></th>
+                                    <th scope="col">Department english name</th>
+                                    <th scope="col">Department arabic name</th>
+                                    <th scope="col">Active</th>
+                                    <th scope="col">&nbsp;</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade model-filter-home" id="AddDepartment" tabindex="-1" aria-labelledby="AddDepartmentLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h1 class="modal-title fs-5" id="exampleModalLabel">Add Department</h1>
+                <button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="AddDepartmentbody">
+                <div class="container-fluid">
+                    <div class="row">
+                        <div class="col-lg-12 mb-2">
+                            <div class="form-group">
+                                <label>English Name</label>
+                                <input class="form-control" type="text" id="txtDep_en">
+                            </div>
+                        </div>
+                        <div class="col-lg-12 mb-2">
+                            <div class="form-group">
+                                <label>Arabic Name</label>
+                                <input class="form-control" type="text" id="txtDep_ar">
+                            </div>
+                        </div>
+                        <div class="col-lg-12 mb-2">
+                            <div class="form-check form-switch d-flex p-0">
+                                <input class="mx-2 form-check-input" id="chkActive" type="checkbox" role="switch" checked>
+                                <label class="form-check-label" for="flexCheckDefault">Active</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer justify-content-start">
+                <button class="btn btn-primary btn-apply rounded-pill col-12" type="button" onclick="createDepartment()" >ADD </button>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade model-filter-home" id="EditDepartment" tabindex="-1" aria-labelledby="EditDepartmentLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h1 class="modal-title fs-5" id="exampleModalLabel_ed">Edit Department</h1>
+                <button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="EditDepartmentbody">
+                <div class="container-fluid">
+                    <div class="row">
+                        <input type="hidden" id="hdDepid" />
+                        <div class="col-lg-12 mb-2">
+                            <div class="form-group">
+                                <label>English Name</label>
+                                <input class="form-control" type="text" id="txtDep_en_ed">
+                            </div>
+                        </div>
+                        <div class="col-lg-12 mb-2">
+                            <div class="form-group">
+                                <label>Arabic Name</label>
+                                <input class="form-control" type="text" id="txtDep_ar_ed">
+                            </div>
+                        </div>
+                        <div class="col-lg-12 mb-2">
+                            <div class="form-check form-switch d-flex p-0">
+                                <input class="mx-2 form-check-input" id="chkActive_ed" type="checkbox" role="switch">
+                                <label class="form-check-label" for="flexSwitchCheckDefault">Active</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer justify-content-start">
+                <button class="btn btn-primary btn-apply rounded-pill col-12" type="button" onclick="saveEditDepartment()">Save </button>
+            </div>
+        </div>
+    </div>
+</div>
+@section Scripts{
+    <script>
+        $(document).ready(function () {
+
+           // var isActive = 0;
+
+            drawtable();
+
+
+        });
+
+        function drawtable() {
+            try {
+                // Destroy the existing DataTable, if it exists
+                if ($.fn.DataTable.isDataTable("#dataTablesDepartment")) {
+                    $("#dataTablesDepartment").DataTable().destroy();
+                }
+               
+                $("#dataTablesDepartment").DataTable({
+                    serverSide: true,
+                    stateSave: false,
+                    processing: true,
+                    info: false,
+                    searching: false,
+                    lengthChange: false,
+                    language: {
+                        processing: '<i class="fa fa-spinner fa-spin fa-3x fa-fw"></i><span class="sr-only">Loading...</span> '
+                    },
+                    ajax: {
+                        url: '/Department/GetDepartment',
+                        type: 'POST',
+                        cache: false,
+                        //data: { bActive: isActive },
+                    },
+                    order: [[1, 'asc'], [2, 'asc']],
+                    // columnDefs: [
+                    //     // {
+                    //     // targets: [0, 1],
+                    //     // visible: false,
+                    //     // searchable: false
+                    //     // },
+                    //     {
+                    //         targets: 9, // This targets the last column
+                    //         orderable: false // Disable sorting for the last column
+                    //     }
+                    // ],
+                    columns: [
+                        { "data": "departmentID", "name": "DepartmentID", "className": "d-none", "visible": false, "searchable": false },
+                        { "data": "depName_E", "name": "DepName_E" },
+                        { "data": "depName_A", "name": "DepName_A" },
+                        {
+                            "name": "bActive ", "render": function (data, type, row) {
+                                var rowDiv = '';
+
+                                if (row.bActive == 0) {
+
+                                    rowDiv = `<div class="Availability"> <i class="fa-solid fa-circle-exclamation text-warning me-2"></i></div>`;
+                                }
+                                else {
+                                    rowDiv = `<div class="Availability" ><i class="fa-solid fa-circle-check text-success me-2"> </i></div >`;
+                                }
+
+                                return rowDiv;
+                            }
+                        },
+                        {
+                            "name": "DepartmentID", "render": function (data, type, row) {
+                                var rowDiv = '';
+                                rowDiv=`<a class="js-itemsrowedit" data-depid="${row.departmentID}" href="javascript:" onclick="editDep(this)"> <i class="fa-regular fa-pen-to-square"></i></a>`;
+                                 if (row.isDefault == 0) {
+                                    rowDiv +=`<a class="text-danger js-itemsrowdelete" data-depid="${row.departmentID}" href="javascript:" onclick="deleteDep(this)"> <i class="fa-solid fa-trash-can"></i></a>`;
+                                 }
+                                //rowDiv += `</div>`;
+                                return rowDiv;
+                            }
+                        }
+                    ],
+                    createdRow: function (row, data, dataIndex) {
+                        $(row).find('td').each(function (index) {
+                            $(this).attr('data-label', $('#dataTablesDepartment th').eq(index).text());
+                        });
+                    }
+                });
+
+            }
+
+            catch (err) {
+                //console.error("An error occurred:", err.message);
+                ShowMsgError(err.message);
+                
+
+            }
+
+        }
+        function createDepartment() {
+            var objData = {};
+            var isActive = 0;
+
+
+            var txtDep_en = $('#txtDep_en').val();
+            var txtDep_ar = $("#txtDep_ar").val();
+            var chkActive = $("#chkActive");
+
+
+            if (!txtDep_en) {// } == null)  || txtitem_en == "" || txtitem_en == undefined) {
+                ShowMsgError('Please enter English name');
+                return false;
+            }
+            if (!txtDep_ar) {// == null || txtitem_ar == "" || txtitem_ar == undefined) {
+                //ShowMsgError('Please enter Arabic name');
+                // return false;
+                txtDep_ar = '';
+            }
+            if (chkActive.is(':checked') == true) {
+                isActive = 1;
+            }
+
+
+            objData = {
+
+                bActive: isActive,
+                DepName_E: txtDep_en,
+                DepName_A: txtDep_ar
+            }
+
+            var jsonData = JSON.stringify(objData);
+
+            $.ajax({
+                url: '@Url.Action("CreateDepartment", "Department")',
+                type: 'POST',
+                dataType: 'json',
+                data: { "dataObj": jsonData },
+                success: function (data) {
+
+                    if (data != null) {
+                        if (data.success == true) {
+                            ShowMsgSuccess(data.returnData);
+                            $("#AddDepartment").modal('hide');
+                            clearModalDep();
+                            drawtable();
+                        }
+                        else {
+                            ShowMsgError(data.returnData);
+                            $("#AddDepartment").modal('show');
+                        }
+
+                    }
+
+                },
+                error: function (error) {
+
+                    ShowMsgError(error);
+                }
+            });
+
+
+        }
+        function saveEditDepartment() {
+            var objData = {};
+            var isActive = 0;
+
+            var hdDepid = $('#hdDepid').val();
+            var txtDep_en_ed = $('#txtDep_en_ed').val();
+            var txtDep_ar_ed = $("#txtDep_ar_ed").val();
+            var chkActive_ed = $("#chkActive_ed");
+
+
+            if (!hdDepid) {// } == null)  || txtitem_en == "" || txtitem_en == undefined) {
+                ShowMsgError('Please select department');
+                return false;
+            }
+            if (!txtDep_en_ed) {// } == null)  || txtitem_en == "" || txtitem_en == undefined) {
+                ShowMsgError('Please enter department english name');
+                return false;
+            }
+            if (!txtDep_ar_ed) {// == null || txtitem_ar == "" || txtitem_ar == undefined) {
+                //alert('Please enter department arabic name');
+                //return false;
+                txtDep_ar_ed='';
+            }
+            if (chkActive_ed.is(':checked') == true) {
+                isActive = 1;
+            }
+
+
+            objData = {
+                DepartmentID: hdDepid,
+                bActive: isActive,
+                DepName_E: txtDep_en_ed,
+                DepName_A: txtDep_ar_ed
+            }
+
+            var jsonData = JSON.stringify(objData);
+
+            $.ajax({
+                url: '@Url.Action("SaveEditdep", "Department")',
+                type: 'POST',
+                dataType: 'json',
+                data: { "dataObj": jsonData },
+                success: function (data) {
+
+                    if (data != null) {
+                        if (data.success == true) {
+                            $("#EditDepartment").modal('hide');
+                            ShowMsgSuccess(data.returnData);
+
+                            clearModalDep();
+                            drawtable();
+                        }
+                        else {
+                            //alert(data.returnData);
+                            ShowMsgError(data.returnData);
+                            $("#EditDepartment").modal('show');
+                        }
+
+                    }
+
+                },
+                error: function (error) {
+
+                    ShowMsgError(error);
+                }
+            });
+        }
+        function editDep(clickedElement) {
+
+            var btnEdit = $(clickedElement);
+            var depid = btnEdit.data("depid");
+
+            $.ajax({
+                url: '@Url.Action("EditDep", "Department")',
+                type: 'POST',
+                data: { depid: depid },
+                success: function (data) {
+
+                    if (data != null) {
+                        if (data.success == true) {
+                            clearModalDep();
+                            $("#hdDepid").val(data.returnData.departmentID);
+                            $("#txtDep_en_ed").val(data.returnData.depName_E);
+                            $("#txtDep_ar_ed").val(data.returnData.depName_A);
+
+                            if (data.returnData.bActive == 0) {
+                                $("#chkActive_ed").attr("checked", false);
+                            }
+                            else {
+                                $("#chkActive_ed").attr("checked", true);
+                            }
+
+                            $("#EditDepartment").modal("show");
+                        }
+                        else {
+                            //alert(data.returnData);
+                            $("#EditDepartment").modal('hide')
+                        }
+
+                    }
+
+                },
+                error: function (error) {
+
+                    ShowMsgError(error);
+                }
+            });
+
+        }
+        function deleteDep(clickedElement) {
+
+            var btnEdit = $(clickedElement);
+            var depid = btnEdit.data("depid");
+
+            Swal.fire({
+                title: 'Are you sure delete Department?',
+                text: "",
+                //icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Yes, delete it!'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.ajax({
+                        url: '@Url.Action("Deletedep", "Department")',
+                        type: 'POST',
+                        data: { depid: depid },
+                        success: function (data) {
+                            if (data != null) {
+                                if (data.success == true) {
+                                    ShowMsgSuccess(data.returnData);
+                                    drawtable();
+                                }
+                                else {
+                                    ShowMsgError(data.returnData);
+
+                                }
+                            }
+                        },
+                        error: function (error) {
+
+                            ShowMsgError(error);
+                        }
+                    });
+                }
+            })
+
+
+        }
+        function clearModalDep() {
+
+            $('#txtDep_en').val();
+            $("#txtDep_ar").val();
+            $("#chkActive").attr("checked", true);
+
+            $("#chkActive_ed").attr("checked", false);
+            $("#txtDep_ar_ed").val();
+            $("#txtDep_en_ed").val();
+            $("#hdDepid").val();
+
+        }
+
+    </script>
+}

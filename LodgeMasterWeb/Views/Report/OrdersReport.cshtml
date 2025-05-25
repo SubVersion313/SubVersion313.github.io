@@ -1,0 +1,379 @@
+﻿@using Newtonsoft.Json;
+@inject IHttpContextAccessor HttpContextAccessor
+@{
+    Layout = "_Layout_main";
+}
+
+@{
+    var permissions = new List<KeyValuePair<string, string>>();
+
+    // استرجاع الصلاحيات من الجلسة إذا كانت موجودة
+    var permissionsJson = HttpContextAccessor.HttpContext.Session.GetString("UserPermissions");
+
+    if (!string.IsNullOrEmpty(permissionsJson))
+    {
+        permissions = JsonConvert.DeserializeObject<List<KeyValuePair<string, string>>>(permissionsJson);
+    }
+
+    // التحقق من وجود صلاحيات معينة
+    bool canRole = permissions.Any(c => c.Key == "Permission" && c.Value == "Permissions.Role.View");
+    bool canEdit = permissions.Any(c => c.Key == "Permission" && c.Value == "Permissions.StaffManagement.Edit");
+    bool canDelete = permissions.Any(c => c.Key == "Permission" && c.Value == "Permissions.StaffManagement.Delete");
+}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-lg-12 pt-3">
+            <header class="header-filter">
+                <div class="group-filter d-flex">
+
+                </div>
+                <div class="date">
+                    @ViewBag.DisplayCurrntDate
+                </div>
+@*                 <a class="btn btn-master d-flex align-items-center rounded-pill btn-Create-Order" asp-controller="CreateOrders" asp-action="Index">
+                    <i class="fa-solid fa-plus me-2"></i>Create Order
+                </a> *@
+                <div class="dropdown">
+                    <button class="btn btn-primary dropdown-toggle rounded-pill btn-master" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="fa-solid fa-plus me-2"></i> Create
+                    </button>
+                    <ul class="dropdown-menu bg-primary text-white">
+                        @if (permissions != null && permissions.Any(c => c.Key == "Permission" && c.Value == "Permissions.CreateOrders.Create"))
+                        {
+                            <li><a class="dropdown-item text-white" asp-controller="CreateOrders" asp-action="Index"><i class="fa-solid fa-plus me-2"></i> Order</a></li>
+                        }
+                        @if (permissions != null && permissions.Any(c => c.Key == "Permission" && c.Value == "Permissions.InspectionOrder.Create"))
+                        {
+                            <li><a class="dropdown-item text-white" asp-controller="InspectionOrder" asp-action="InspectionOrder"><i class="fa-solid fa-plus me-2"></i> Room inspiction</a></li>
+                        }
+                    </ul>
+                </div>
+            </header>
+        </div>
+    </div>
+</div>
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-lg-12"> </div>
+        <div class="col-lg-12 pt-3">
+            <header class="header-filter flex-column">
+                <h4 class="fw-bold">Reports</h4>
+                <div class="container-fluid">
+                    <div class="row">
+                        <div class="col-lg-3 col-md-6 col-sm-12 mb-3">
+                            <div class="form-group">
+                                <label class="mb-2" for="exampleFormControlSelect1">Period Date</label>
+                                <select id="ddlFilterPeriod" class="form-select" aria-label="Default select example" onchange="changePeriod()">
+                                    <option selected value="0">Select Period  </option>
+                                    <option value="1">Today</option>
+                                    <option value="2">This Week</option>
+                                    <option value="3">Before Week </option>
+                                    <option value="4">Before Month</option>
+                                    <option value="5">Before Year</option>
+
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-lg-3 col-md-6 col-sm-12 mb-3">
+                            <div class="form-group">
+                                <label class="mb-2" for="exampleFormControlSelect1">From Date</label>
+                                <input id="txtDateFrom" class="form-control rounded-pill" type="date">
+                            </div>
+                        </div>
+                        <div class="col-lg-3 col-md-6 col-sm-12 mb-3">
+                            <div class="form-group">
+                                <label class="mb-2" for="exampleFormControlSelect1">To Date</label>
+                                <input id="txtDateTo" class="form-control rounded-pill" type="date">
+                            </div>
+                        </div>
+                        <div class="col-lg-3 col-md-6 col-sm-12 mb-3">
+                            <label class="mb-2" for="exampleFormControlSelect1"> &nbsp;</label>
+                            <div class="d-flex justify-content-around">
+                                <a id="btnFilterData" class="btn btn-master d-flex align-items-center rounded-pill btn-Create-Order" onclick="filterData()">
+                                    Apply Filter
+                                </a>
+                                @* <button id="btnExportData" class="btn btn-outline-dark rounded-pill" onclick="exportData()">Export<i class="fa-solid fa-cloud-arrow-down ms-2 fa-fw"></i></button> *@
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </header>
+        </div>
+    </div>
+</div>
+<div id="pageMasterLoad">
+    <div class="HomeDashboard">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-lg-12 mb-4">
+                    <div class="overview-Orders">
+                        <div class="header-overview mb-3 justify-content-start">
+                            <div class="title-head mb-0"> Orders</div>
+                        </div>
+
+                        <table class="table table-responsive" id="tabledashboard">
+                            <thead>
+                                <tr>
+
+                                    <th scope="col">Order no.</th>
+                                    <th scope="col">Date</th>
+                                    <th scope="col">Location</th>
+                                    <th scope="col">Department</th>
+                                    <th scope="col">Creator</th>
+                                    <th scope="col">Assigned to</th>
+                                    <th scope="col">Run time</th>
+                                    <th scope="col">Status</th>
+                                    <th scope="col" style="display:none">Id</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            </tbody>
+                        </table>
+
+                    </div>
+                </div>
+       
+            </div>
+        </div>
+    </div>
+</div>
+
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+
+            var objData = {};
+            objData = {
+                isComeFrom: 0,
+                filterPeriod: 0,
+
+            }
+
+            var jsonData = JSON.stringify(objData);
+
+            drawtable(jsonData);
+           
+
+        });
+
+        function changePeriod() {
+
+            var ddlFilterPeriod = document.getElementById("ddlFilterPeriod");
+            var txtDateFrom = document.getElementById("txtDateFrom");
+            var txtDateTo = document.getElementById("txtDateTo");
+
+            if (ddlFilterPeriod.value > 0) {
+                //value = "1" > This Today
+                //value = "2" > This Week
+                //value = "3" > Before Week
+                //value = "4" > Before Month
+                //value = "5" > Before Year
+
+                var currntDateTo = new Date();
+                var currntDateFrom = new Date();
+
+                if (ddlFilterPeriod.value == 1)
+                    currntDateFrom = currntDateTo;
+
+                if (ddlFilterPeriod.value == 2)
+                    currntDateFrom.setDate(currntDateTo.getDate() - 7);
+
+                if (ddlFilterPeriod.value == 3) {
+                   
+                                     
+                    currntDateTo.setDate(currntDateTo.getDate() - 7);
+                    //alert(currntDateTo);
+
+                    currntDateFrom.setDate(currntDateFrom.getDate() - 14);
+                    //alert(currntDateFrom.setDate(currntDateTo.getDate() - 7));
+                }
+                if (ddlFilterPeriod.value == 4)
+                    currntDateFrom.setDate(currntDateTo.getDate() - 30);
+
+                if (ddlFilterPeriod.value == 5)
+                    currntDateFrom.setDate(currntDateTo.getDate() - 365);
+
+
+                txtDateFrom.value = currntDateFrom.toISOString().split('T')[0];
+                txtDateTo.value = currntDateTo.toISOString().split('T')[0];
+
+            }
+            else {
+
+            }
+        }
+        function drawtable(datafilter) {
+            try {
+                // Destroy the existing DataTable, if it exists
+                if ($.fn.DataTable.isDataTable("#tabledashboard")) {
+                    $("#tabledashboard").DataTable().destroy();
+                }
+                //alert("2");
+                $("#tabledashboard").DataTable({
+                    serverSide: true,
+                    stateSave: false,
+                    processing: true,
+                    info: false,
+                    searching: false,
+                    lengthChange: false,
+                    language: {
+                        processing: '<i class="fa fa-spinner fa-spin fa-3x fa-fw"></i><span class="sr-only">Loading...</span> '
+                    },
+                    ajax: {
+                        url: '/Report/GetOrders',
+                        type: 'POST',
+                        cache: false,
+                        data: { "dataObj": datafilter },
+                    },
+                    order: [],
+                    // columnDefs: [{
+                    //     targets: [0, 1, 2, 3, 4, 5, 6],
+                    //     visible: false,
+                    //     searchable: false
+                    // }],
+                    columns: [
+                        { "data": "order_cd", "name": "Order_cd" },
+                        { "data": "currentDate", "name": "CurrentDate" },
+                        { "data": "locationName", "name": "LocationName" },
+                        { "data": "depName", "name": "DepName" },
+                        { "data": "createName", "name": "CreateName" },
+                        { "data": "assignName", "name": "AssignName" },
+                        {
+                            "name": "RunTime", "render": function (data, type, row) {
+                                var runTimeDesc = '';
+                                if (row.daysDifference == 1) {
+                                    runTimeDesc = `${row.daysDifference} Day ${row.remainingHours} H`;
+                                }
+                                else if (row.daysDifference < 1) {
+                                    runTimeDesc = `${row.remainingHours} H`;
+                                }
+                                else {
+                                    runTimeDesc = `${row.daysDifference} Days ${row.remainingHours} H`;
+                                }
+                                return runTimeDesc;
+                            }
+                        },
+                        {
+                            "name": "StatusName", "render": function (data, type, row) {
+
+                                switch (row.statusId) {
+                                    case 1:
+                                        return `<a class="badge bg-open text-dark rounded-pill" >${row.statusName}</a>`;
+                                        break;
+                                    case 2:
+
+                                        return `<a class="badge bg-Completed text-dark rounded-pill" >${row.statusName}</a>`;
+                                        break;
+                                    case 3:
+                                        return `<a class="badge bg-process text-dark rounded-pill" >${row.statusName}</a>`;
+                                        break;
+                                    case 9:
+                                        return `<a class="badge bg-Hold text-dark rounded-pill" >${row.statusName}</a>`;
+                                        break;
+                                    case 12:
+                                        return `<a class="badge bg-Closed text-dark rounded-pill" >${row.statusName}</a>`;
+                                        break;
+                                    case 13:
+                                        return `<a class="badge bg-defer text-dark rounded-pill" >${row.statusName}</a>`;
+                                        break;
+                                }
+                            }
+                        },
+
+                        { "data": "orderID", "name": "OrderID", "className": "d-none", "visible": false, "searchable": false },
+
+                    ],
+                    createdRow: function (row, data, dataIndex) {
+                        $(row).find('td').each(function (index) {
+                            $(this).attr('data-label', $('#tabledashboard th').eq(index).text());
+                        });
+                    }
+                });
+                //GetAllOrders();
+            }
+
+            catch (err) {
+                //console.log("10");
+                alert(err.message);
+                //console.error(err);
+
+            }
+
+        }
+
+        function filterData() {
+            try {
+                var objData = {};
+
+                var ddlFilterPeriod = document.getElementById("ddlFilterPeriod");
+                var txtDateFrom = document.getElementById("txtDateFrom");
+                var txtDateTo = document.getElementById("txtDateTo");
+
+                var isComeFrom = 1;
+                var filterPeriod = "";
+                var filterDateFrom = "";
+                var filterDateTo = "";
+
+                if (ddlFilterPeriod.selectedIndex != -1) {
+                    filterPeriod = ddlFilterPeriod.options[ddlFilterPeriod.selectedIndex].value;
+                }
+                if (txtDateFrom.value != "") {
+                    filterDateFrom = txtDateFrom.value;
+                }
+                if (txtDateTo.value != "") {
+                    filterDateTo = txtDateTo.value;
+                }
+
+                objData = {
+                    isComeFrom: isComeFrom,
+                    filterPeriod: filterPeriod,
+                    filterDateFrom: filterDateFrom,
+                    filterDateTo: filterDateTo
+                }
+
+                var jsonData = JSON.stringify(objData);
+
+                drawtable(jsonData);
+
+
+            }
+
+            catch (err) {
+                //console.log("10");
+                alert(err.message);
+                //console.error(err);
+
+            }
+
+        }
+        function exportData() {
+            // try 
+            // {
+            //     $.ajax({
+            //         url: '@Url.Action("ExportToExcel", "Report")',
+            //         type: "GET",
+            //         dataType: "json",
+            //         Cache: false,
+            //         success: function (result) {
+            //             if (result.success) {
+            //                 alert(result.message);
+            //             } else {
+            //                 alert(result.message);
+            //             }
+            //         },
+            //         error: function (err) {
+            //             return false;
+            //         }
+            //     });
+            // }
+            // catch (err) {
+            //     //console.log("10");
+            //     alert(err.message);
+            //     //console.error(err);
+            // }
+            
+        }
+
+    </script>
+}

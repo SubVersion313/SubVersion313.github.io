@@ -1,0 +1,66 @@
+/* Start Setup Room */
+.setup-Room-page {
+  .room-information  {
+    background-color: $liteColor;
+    padding: 20px;
+    border-radius: 20px;
+    .room-name  {
+      background-color: $mColor;
+      border-radius: 30px;
+      display: inline-flex;
+      padding: 5px 10px ;
+      padding-inline-end: 50px;
+      color: #fff;
+      .icon{
+        margin-inline-end: 10px;
+        background-color: #fff;
+        border-radius: 50%;
+        width: 27px;
+        height: 27px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        color: $mColor;
+      }
+    }
+  }
+  .input-group {
+    margin: auto;
+    .form-control, .form-select {
+      border-start-start-radius: 15px;
+      border-end-start-radius: 15px;
+      border-color: $mColor;
+    }
+    .input-group-text  {
+        border-start-end-radius: 15px;
+      border-end-end-radius: 15px;
+    }
+  }
+  .list-categories {
+    li {
+      margin: auto;
+      border: 1px solid $mColor;
+      border-radius: 30px;
+      padding: 10px;
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 15px;
+      color: $mColor;
+      transition: all 0.4s ease-in-out;
+      &:hover {
+        background-color: $mColor;
+        color: #fff;
+      }
+      .exit {
+        cursor: pointer;
+
+      }
+      &.active {
+        background-color: $mColor;
+        color: #fff;
+      }
+    }
+    
+  }
+}
+/* End Setup Room */

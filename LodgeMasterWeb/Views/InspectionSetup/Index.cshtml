@@ -1,0 +1,92 @@
+﻿@using Newtonsoft.Json;
+@inject IHttpContextAccessor HttpContextAccessor
+@{
+    Layout = "_Layout_main";
+}
+
+@{
+    var permissions = new List<KeyValuePair<string, string>>();
+
+    // استرجاع الصلاحيات من الجلسة إذا كانت موجودة
+    var permissionsJson = HttpContextAccessor.HttpContext.Session.GetString("UserPermissions");
+
+    if (!string.IsNullOrEmpty(permissionsJson))
+    {
+        permissions = JsonConvert.DeserializeObject<List<KeyValuePair<string, string>>>(permissionsJson);
+    }
+
+    // التحقق من وجود صلاحيات معينة
+    bool canRole = permissions.Any(c => c.Key == "Permission" && c.Value == "Permissions.Role.View");
+    bool canEdit = permissions.Any(c => c.Key == "Permission" && c.Value == "Permissions.StaffManagement.Edit");
+    bool canDelete = permissions.Any(c => c.Key == "Permission" && c.Value == "Permissions.StaffManagement.Delete");
+}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-lg-12 pt-3">
+            <header class="header-filter">
+                <div class="group-filter d-flex">
+@*                     <div class="input-group me-3">
+                        <input class="form-control" type="search" placeholder="Search" aria-label="Recipient's username" aria-describedby="button-addon2">
+                        <button class="btn btn-outline-master" id="button-addon2" type="button"> <i class="fa-solid fa-magnifying-glass"></i></button>
+                    </div>
+                    <button class="btn btn-outline-master d-flex align-items-center" type="button" data-bs-toggle="modal" data-bs-target="#exampleModal"> <i class="fa-solid fa-arrow-down-wide-short me-2"></i>Filter</button>
+                 *@</div>
+                <div class="date">
+                    @ViewBag.DisplayCurrntDate
+                </div>
+@*                 <a class="btn btn-master d-flex align-items-center rounded-pill btn-Create-Order" asp-controller="CreateOrders" asp-action="Index">
+                    <i class="fa-solid fa-plus me-2"></i>Create Order
+                </a> *@
+                <div class="dropdown">
+                    <button class="btn btn-primary dropdown-toggle rounded-pill btn-master" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="fa-solid fa-plus me-2"></i> Create
+                    </button>
+                    <ul class="dropdown-menu bg-primary text-white">
+                        @if (permissions != null && permissions.Any(c => c.Key == "Permission" && c.Value == "Permissions.CreateOrders.Create"))
+                        {
+                            <li><a class="dropdown-item text-white" asp-controller="CreateOrders" asp-action="Index"><i class="fa-solid fa-plus me-2"></i> Order</a></li>
+                        }
+                        @if (permissions != null && permissions.Any(c => c.Key == "Permission" && c.Value == "Permissions.InspectionOrder.Create"))
+                        {
+                            <li><a class="dropdown-item text-white" asp-controller="InspectionOrder" asp-action="InspectionOrder"><i class="fa-solid fa-plus me-2"></i> Room inspiction</a></li>
+                        }
+                    </ul>
+                </div>
+            </header>
+        </div>
+    </div>
+</div>
+<div class="">
+
+    <section class="">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-lg-4 col-md-6 col-sm-6">
+                    <a class="category-item" asp-controller="InspectionSetup" asp-action="InspectionSetup">
+                        <div class="image"> <img src="~/assets/images/Svg/dashboard.svg" alt=""></div>
+                        <div class="heder-category-item"> Inspection Info </div>
+                    </a>
+                </div>
+                <div class="col-lg-4 col-md-6 col-sm-6">
+                    <a class="category-item" asp-controller="InspectionSetup" asp-action="InspectionDepartment">
+                        <div class="image"> <img src="~/assets/images/Svg/RoomInspection.svg" alt=""></div>
+                        <div class="heder-category-item"> Inspection Types </div>
+                    </a>
+                </div>
+                <div class="col-lg-4 col-md-6 col-sm-6">
+                    <a class="category-item" asp-controller="InspectionSetup" asp-action="InspectionQuestion">
+                        <div class="image"> <img src="~/assets/images/Svg/ServiceOrders.svg" alt=""></div>
+                        <div class="heder-category-item"> Inspection Question </div>
+                    </a>
+                </div>
+                <div class="col-lg-4 col-md-6 col-sm-6">
+                    <a class="category-item" asp-controller="InspectionSetup" asp-action="InspectionLinkQuestion">
+                        <div class="image"> <img src="~/assets/images/Svg/StaffManagement.svg" alt=""></div>
+                        <div class="heder-category-item"> Inspection Setup</div>
+                    </a>
+                </div> 
+
+            </div>
+        </div>
+    </section>
+</div>

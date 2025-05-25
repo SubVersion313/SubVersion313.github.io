@@ -1,0 +1,122 @@
+﻿@using Microsoft.AspNetCore.Http
+@using Newtonsoft.Json
+@inject IHttpContextAccessor HttpContextAccessor
+@{
+    Layout = "_Layout_main";
+}
+
+@{
+    var permissions = new List<KeyValuePair<string, string>>();
+
+    // استرجاع الصلاحيات من الجلسة إذا كانت موجودة
+    var permissionsJson = HttpContextAccessor.HttpContext.Session.GetString("UserPermissions");
+
+    if (!string.IsNullOrEmpty(permissionsJson))
+    {
+        permissions = JsonConvert.DeserializeObject<List<KeyValuePair<string, string>>>(permissionsJson);
+    }
+
+    // التحقق من وجود صلاحيات معينة
+    bool canRole = permissions.Any(c => c.Key == "Permission" && c.Value == "Permissions.Role.View");
+    bool canEdit = permissions.Any(c => c.Key == "Permission" && c.Value == "Permissions.StaffManagement.Edit");
+    bool canDelete = permissions.Any(c => c.Key == "Permission" && c.Value == "Permissions.StaffManagement.Delete");
+}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-lg-12 pt-3">
+            <header class="header-filter">
+                <div class="group-filter d-flex">
+
+                </div>
+                <div class="date">
+                    @ViewBag.DisplayCurrntDate
+                </div>
+                <div class="dropdown">
+                    <button class="btn btn-primary dropdown-toggle rounded-pill btn-master" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="fa-solid fa-plus me-2"></i> Create
+                    </button>
+                    <ul class="dropdown-menu bg-primary text-white">
+                        @if (permissions != null && permissions.Any(c => c.Key == "Permission" && c.Value == "Permissions.CreateOrders.Create"))
+                        {
+                            <li><a class="dropdown-item text-white" asp-controller="CreateOrders" asp-action="Index"><i class="fa-solid fa-plus me-2"></i> Order</a></li>
+                        }
+                        @if (permissions != null && permissions.Any(c => c.Key == "Permission" && c.Value == "Permissions.InspectionOrder.Create"))
+                        {
+                            <li><a class="dropdown-item text-white" asp-controller="InspectionOrder" asp-action="InspectionOrder"><i class="fa-solid fa-plus me-2"></i> Room inspiction</a></li>
+                        }
+                    </ul>
+                </div>
+            </header>
+        </div>
+    </div>
+</div>
+<div class="">
+
+    <section class="">
+        <div class="container-fluid">
+            <div class="row">
+
+                @if (permissions.Any(c => c.Key == "Permission" && c.Value == "Permissions.SetupRooms.View"))
+                {
+                    <div class="col-lg-4 col-md-6 col-sm-6">
+                        <a class="category-item" asp-controller="TimeManagement" asp-action="CreditsRooms">
+                            <div class="image"> <img src="~/assets/images/Svg/Rooms.svg" alt=""></div>
+                            <div class="heder-category-item"> Rooms </div>
+                        </a>
+                    </div>
+                }
+
+                @if (permissions.Any(c => c.Key == "Permission" && c.Value == "Permissions.ShiftWork.View"))
+                {
+                    <div class="col-lg-4 col-md-6 col-sm-6">
+                        <a class="category-item" asp-controller="TimeManagement" asp-action="ShiftsManagement">
+                            <div class="image"> <img src="~/assets/images/Svg/work-time.svg" alt=""></div>
+                            <div class="heder-category-item"> Shifts </div>
+                        </a>
+                    </div>
+                }
+                @if (permissions.Any(c => c.Key == "Permission" && c.Value == "Permissions.InspectionSetup.View"))
+                {
+                    <div class="col-lg-4 col-md-6 col-sm-6">
+                        <a class="category-item" asp-controller="TimeManagement" asp-action="ShiftEmployees">
+                            <div class="image"> <img src="~/assets/images/Svg/add-user.svg" alt=""></div>
+                            <div class="heder-category-item"> Shift For Employees</div>
+                        </a>
+                    </div>
+                }
+                @if (permissions.Any(c => c.Key == "Permission" && c.Value == "Permissions.Department.View"))
+                {
+                    <div class="col-lg-4 col-md-6 col-sm-6">
+                        <a class="category-item" asp-controller="TimeManagement" asp-action="PmsRoom">
+                            <div class="image"> <img src="~/assets/images/Svg/add-task.svg" alt=""></div>
+                            <div class="heder-category-item"> Add Tasks </div>
+                        </a>
+                    </div>
+                }
+                @if (permissions.Any(c => c.Key == "Permission" && c.Value != "Permissions.StaffManagement.View"))
+                {
+                    <div class="col-lg-4 col-md-6 col-sm-6">
+                        <a class="category-item" asp-controller="TimeManagement" asp-action="OverviewEmployees">
+                            <div class="image"> <img src="~/assets/images/Svg/research.svg" alt=""></div>
+                            <div class="heder-category-item"> Overview For Employees </div>
+                        </a>
+                    </div>
+                }
+                @if (permissions.Any(c => c.Key == "Permission" && c.Value != "Permissions.StaffManagement.View"))
+                {
+                    <div class="col-lg-4 col-md-6 col-sm-6">
+                        <a class="category-item" asp-controller="TimeManagement" asp-action="ReportTasks">
+                            <div class="image"> <img src="~/assets/images/Svg/project-management.svg" alt=""></div>
+                            <div class="heder-category-item"> Report Tasks </div>
+                        </a>
+                    </div>
+                }
+            </div>
+        </div>
+    </section>
+</div>
+
+
+
+
+

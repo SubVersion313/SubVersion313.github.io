@@ -1,0 +1,94 @@
+.card-master {
+  background-color: #fff;
+  border-radius: 20px;
+  padding: 20px;
+  .title-card {
+    color: $mColor;
+  }
+}
+
+.add-item-order {
+  background-color: #ebf5ff;
+  padding: 20px;
+  .select-item {
+    .form-group {
+      width: 49%;
+      margin-inline-end: 1%;
+    }
+    .btn {
+      margin-inline-start: 2%;
+      color: $mColor;
+      width: 18%;
+      text-align: center;
+      cursor: pointer;
+      &:hover {
+        background-color: $mColor;
+        color: #fff;
+      }
+    }
+  }
+  .increment-item {
+    .input-group {
+      // width: 49%;
+      .form-control {
+        border-color: $mColor;
+        font-size: 1.4rem;
+        text-align: center;
+      }
+    }
+    .btn-master {
+      width: 68%;
+      margin-inline-start: 2%;
+    }
+  }
+  
+}
+.select2-container{
+     .select2-selection--single {
+      height: 45px;
+      border-radius: 7px;
+      border-color: #dee2e6;
+      .select2-selection__rendered {
+        line-height: 45px;
+      }
+      .select2-selection__arrow {
+        top: 10px;
+      }
+    }
+  }
+.badge-item {
+  background-color: #ebf5ff;
+  border-radius: 5px;
+  padding: 5px 10px;
+  .badge-number {
+    background-color: #fff;
+    border-radius: 5px;
+    padding: 2px;
+    margin-inline: 5px;
+    min-width: 25px;
+    display: inline-block;
+    text-align: center;
+  }
+  .icon-exit {
+    cursor: pointer;
+  }
+}
+.label-Assignee {
+  background-color: #ebf5ff;
+  border: 1px solid #333333;
+  color: #333;
+  border-radius: 5px;
+  padding: 10px;
+  display: flex;
+  align-items: center;
+  .icon {
+    width: 25px;
+    height: 25px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 50%;
+    border: 1px solid #333;
+    margin-inline-end: 10px;
+  }
+}

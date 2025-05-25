@@ -1,0 +1,417 @@
+﻿@using Newtonsoft.Json;
+@inject IHttpContextAccessor HttpContextAccessor
+@model VMInspDetails
+@{
+    Layout = "_Layout_main";
+}
+
+@{
+    var permissions = new List<KeyValuePair<string, string>>();
+
+    // استرجاع الصلاحيات من الجلسة إذا كانت موجودة
+    var permissionsJson = HttpContextAccessor.HttpContext.Session.GetString("UserPermissions");
+
+    if (!string.IsNullOrEmpty(permissionsJson))
+    {
+        permissions = JsonConvert.DeserializeObject<List<KeyValuePair<string, string>>>(permissionsJson);
+    }
+
+    // التحقق من وجود صلاحيات معينة
+    bool canRole = permissions.Any(c => c.Key == "Permission" && c.Value == "Permissions.Role.View");
+    bool canEdit = permissions.Any(c => c.Key == "Permission" && c.Value == "Permissions.StaffManagement.Edit");
+    bool canDelete = permissions.Any(c => c.Key == "Permission" && c.Value == "Permissions.StaffManagement.Delete");
+}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-lg-12 pt-3">
+            <header class="header-filter">
+                <div class="group-filter d-flex">
+                </div>
+                <div class="date">
+                    @ViewBag.DisplayCurrntDate
+                </div>
+@*                 <a class="btn btn-master d-flex align-items-center rounded-pill btn-Create-Order" asp-controller="CreateOrders" asp-action="Index">
+                    <i class="fa-solid fa-plus me-2"></i>Create Order
+                </a> *@
+                <div class="dropdown">
+                    <button class="btn btn-primary dropdown-toggle rounded-pill btn-master" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="fa-solid fa-plus me-2"></i> Create
+                    </button>
+                    <ul class="dropdown-menu bg-primary text-white">
+                        @if (permissions != null && permissions.Any(c => c.Key == "Permission" && c.Value == "Permissions.CreateOrders.Create"))
+                        {
+                            <li><a class="dropdown-item text-white" asp-controller="CreateOrders" asp-action="Index"><i class="fa-solid fa-plus me-2"></i> Order</a></li>
+                        }
+                        @if (permissions != null && permissions.Any(c => c.Key == "Permission" && c.Value == "Permissions.InspectionOrder.Create"))
+                        {
+                            <li><a class="dropdown-item text-white" asp-controller="InspectionOrder" asp-action="InspectionOrder"><i class="fa-solid fa-plus me-2"></i> Room inspiction</a></li>
+                        }
+                    </ul>
+                </div>
+            </header>
+        </div>
+    </div>
+</div>
+<div id="pageMasterLoad">
+    <div class="information-Row-Table">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-lg-12">
+                    <div class="card-master card-information-Table mb-5 p-0">
+                        <div class="p-4 title-information-Table d-flex flex-wrap align-items-center border-bottom">
+                            <a class="me-3" asp-action="InspectionReport"><i class="fa-solid fa-arrow-left-long"></i></a>
+                            <div class="d-flex flex-wrap align-items-center">
+                                <div class="bg-open text-dark rounded-pill px-4 py-1">@Model.StatusName</div>
+                                @*                                 <div class="inputs-group mx-3 mb-2">
+                                <div class="label">Inspection No.</div>
+                                <div class="input-value d-flex algin-items-center"> <span class="text">@Model.InspectionID</span></div>
+                                </div> *@
+                                <div class="inputs-group mx-3 mb-2">
+                                    <div class="label">Date</div>
+                                    <div class="input-value d-flex algin-items-center"> <span class="icon me-2 text-primary"> <i class="fa-solid fa-calendar-days fa-fw"></i></span><span class="text">@Model.CreateDate</span></div>
+                                </div>
+                            </div>
+                            <div class="ms-auto mb-3 text-end">
+
+                                <a class="rounded-pill btn btn-master px-4" id="btnEditAnswerForm" onclick="editAnswerInspection()">Edit </a>
+                                <a class="rounded-pill btn btn-success px-4" id="btnSaveAnswerForm" style="display:none;" onclick="saveAnswerInspection()">Save </a>
+                            </div>
+                        </div>
+                        <div class="information-Table-body p-0">
+                            <div class="container-fluid">
+                                <div class="row">
+                                    <div class="col-lg-12 col-md-12 col-sm-12">
+                                        <h3 class="fw-bold my-2" id="txtLocationName">@Model.LocationName</h3>
+                                        <input type="hidden" id="hfInspectioId" value="@Model.InspectionID" />
+                                        <div id="tableDisplay">
+                                            <table class="table table-responsive-scroll align-middle gy-3" id="tableInspDetails">
+                                                <thead>
+                                                    <tr>
+                                                        <th scope="col">Part Name</th>
+                                                        <th scope="col">Question</th>
+                                                        <th scope="col">Answer</th>
+                                                        <th scope="col">Note  </th>
+                                                        <th scope="col">Edit Answer </th>
+                                                        <th scope="col">Edit Note  </th>
+                                                        <th scope="col">Befor pic  </th>
+                                                        <th scope="col">After pic  </th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    @{
+                                                        @foreach (var item in Model.LstQuestionData)
+                                                        {
+                                                            <tr>
+                                                                <td>@item.PartName</td>
+                                                                <td>@item.QuestionDisplay</td>
+                                                                <td>
+                                                                    <div class="align-middel">
+                                                                        @if (item.UserAnswer == 0)
+                                                                        {
+                                                                            <i class="fa-solid fa-circle-xmark text-danger"></i>
+                                                                        }
+                                                                        else
+                                                                        {
+                                                                            <i class="fa-solid fa-circle-check text-success"></i>
+                                                                        }
+                                                                    </div>
+                                                                </td>
+                                                                <td>@item.CommetAnswer</td>
+                                                                <td>
+                                                                    <div class="align-middel">
+                                                                        @if (item.UserAnswerAfter == 0)
+                                                                        {
+                                                                            <i class="fa-solid fa-circle-xmark text-danger"></i>
+                                                                        }
+                                                                        else
+                                                                        {
+                                                                            <i class="fa-solid fa-circle-check text-success"></i>
+                                                                        }
+                                                                    </div>
+                                                                </td>
+                                                                <td>@item.CommetAnswerAfter</td>
+                                                                <td><a href="#" onclick="showBeforPic(this)" data-fullpic="@item.PicBeforePath" data-titelpic="@item.PicBefore"><i class="fa-regular fa-image"></i></a></td>
+                                                                <td><a href="#" onclick="showAfterPic(this)" data-fullpic="@item.PicAfterPath" data-titelpic="@item.PicAfter"><i class="fa-regular fa-image"></i></a></td>
+                                                            </tr>
+                                                        }
+                                                    }
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                        <div id="tableEdit" style="display:none">
+                                            <table class="table table-responsive-scroll align-middle gy-3" id="tableInspAnswersEdit">
+                                                <thead>
+                                                    <tr>
+                                                        <th scope="col">Part Name</th>
+                                                        <th scope="col">Question</th>
+                                                        <th scope="col">Answer</th>
+                                                        <th scope="col">Note  </th>
+                                                        <th scope="col">picture  </th>
+                                                        <th scope="col" style="display: none;"></th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    @{
+                                                        if (Model.LstQuestionData != null)
+                                                        {
+                                                            foreach (var qut in Model.LstQuestionData)
+                                                            {
+                                                                <tr>
+                                                                    <td>@qut.PartName</td>
+                                                                    <td>@qut.QuestionDisplay</td>
+                                                                    <td>
+                                                                        <div class="form-check  content-check-box">
+                                                                            <div class="form-switch">
+                                                                                <input class="js-chkYesNo form-check-input" id="chkService" type="checkbox" role="switch"
+                                                                                @(qut.UserAnswerAfter == 1 ? "checked" : "")>
+                                                                                <label class="form-check-label" for="chkService">No/Yes</label>
+                                                                            </div>
+                                                                        </div>
+                                                                    </td>
+                                                                    <td><input type="text" class="js-notes form-control" value="@qut.CommetAnswerAfter"></td>
+                                                                    <td>
+                                                                        <div class="d-flex justify-content-center">
+                                                                            <input class="form-control form-control-sm" id="filePicEdit" type="file">
+                                                                        </div>
+                                                                    </td>
+                                                                    <td style="display: none;" class="js-DetailId" data-rowid="@qut.DetailID"></td>
+                                                                </tr>
+                                                            }
+                                                        }
+                                                    }
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+<div class="modal fade" id="ViewImageModal" tabindex="-1" aria-labelledby="ViewImageModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h1 class="modal-title fs-5" id="titelpic"></h1>
+                <button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center p-0" style="height: 500px"><img class="w-100 h-100" id="attchimage" src="" alt="" style="    object-fit: contain;"></div>
+        </div>
+    </div>
+</div>
+@section Scripts {
+    <script>
+        function showBeforPic(elementobj) {
+
+            var picname = $(elementobj).data("fullpic");
+            var titelpic = $(elementobj).data("titelpic");
+            //alert("picname: " + picname + " compfolder: " + titelpic);
+
+            //var pathdata = "../../Companies/" + compfolder + "/images/orders/";
+            if (picname != null || picname != "" || picname != undefined) {
+                //$("#attchimage").attr("", pathdata + picname);
+                $("#attchimage").attr("src", picname);
+                $("#titelpic").html(titelpic);
+                $("#ViewImageModal").modal("show");
+            }
+        }
+        function showAfterPic(elementobj) {
+
+            var picname = $(elementobj).data("fullpic");
+            var titelpic = $(elementobj).data("titelpic");
+            //alert("picname: " + picname + " compfolder: " + titelpic);
+
+            //var pathdata = "../../Companies/" + compfolder + "/images/orders/";
+            if (picname != null || picname != "" || picname != undefined) {
+                //$("#attchimage").attr("", pathdata + picname);
+                $("#attchimage").attr("src", picname);
+                $("#titelpic").html(titelpic);
+                $("#ViewImageModal").modal("show");
+            }
+        }
+        function saveAnswerInspection() {
+
+            //var formDataArray = [];
+            //var formDataImage = [];
+            var inspectioId = $("#hfInspectioId").val();
+            var formData = new FormData();
+
+            $('#tableInspAnswersEdit tbody tr').each(function () {
+                var row = $(this);
+
+                //var formData = row.data('formData');
+                var answer = row.find('.js-chkYesNo').prop('checked') ? 1 : 0; // Get the value of the checkbox (Answer)
+                var note = row.find('.js-notes').val(); // Get the value of the input field (Note)
+                //var picture = row.find('#filePicEdit')[0].files[0]; // Get the value of the file input (Picture)
+                var pictureInput = row.find('#filePicEdit')[0];//.files[0]; // Get the value of the file input (Picture)
+                var rowid = row.find(".js-DetailId").data("rowid");
+
+                //var formData = new FormData();
+
+                // var objdata = {
+                //     inspectioId: inspectioId,
+                //     rowid: rowid,
+                //     answer: answer,
+                //     note: note
+                //     //ImageAfter: picture1
+                // }
+
+
+
+                formData.append("dataObj[" + rowid + "].inspectioId", inspectioId);
+                formData.append("dataObj[" + rowid + "].rowid", rowid);
+                formData.append("dataObj[" + rowid + "].answer", answer);
+                formData.append("dataObj[" + rowid + "].note", note);
+
+                if (pictureInput.files.length > 0) {
+                    var picture = pictureInput.files[0];
+                    formData.append("dataObj[" + rowid + "].image", picture);
+
+                } else {
+                    // If no image is selected, append a placeholder value (e.g., null)
+                    formData.append("dataObj[" + rowid + "].image", null);
+                }
+
+                //formDataArray.push(formData);
+
+            });
+
+            //var jsonData = JSON.stringify(dataArray);
+            //console.log(formDataArray);
+            //console.log(formDataImage);
+
+            $.ajax({
+                url: '@Url.Action("UpdateFormRow", "Report")',
+                type: "POST",
+                //enctype: "multipart/form-data",
+                data: formData,
+                processData: false, // important
+                contentType: false, // important
+                //dataType: 'json',
+                success: function (data) {
+                    if (data.success) {
+
+                        ShowMsgSuccess("updated data");
+                        location.reload();
+                    } else {
+                        ShowMsgError("can not updated");
+                    }
+                },
+                error: function (err) {
+                    return false;
+                },
+                error: function (xhr, status, error) {
+                    // Handle error
+                    console.error('Error uploading image:', error);
+                }
+            });
+        }
+        function editAnswerInspection() {
+
+            var modelDisplayAnswer = $("#tableDisplay");
+            var modelEditAnswer = $("#tableEdit");
+            //alert("1");
+            if (modelDisplayAnswer.css("display") != "none") {
+                //alert("2");
+                modelEditAnswer.show();
+                modelDisplayAnswer.hide();
+                $("#btnEditAnswerForm").text("Back");
+                $("#btnSaveAnswerForm").show();//attr("display","block");
+
+            }
+            else {
+                //alert("3");
+                modelEditAnswer.hide();
+                modelDisplayAnswer.show();
+                $("#btnEditAnswerForm").text("Edit");
+                $("#btnSaveAnswerForm").hide();//attr("display", "none");
+                location.reload();
+            }
+            var inspectioId = $("#hfInspectioId").val();
+
+            if (inspectioId == null) {
+                //alert('can not edit answers');
+                return false;
+            }
+
+            // $.ajax({
+            //     url: '@Url.Action("GetAnswer", "Report")',
+            //     type: "POST",
+            //     data: { "OrderId": inspectioId },
+            //     dataType: "json",
+            //     cache: false,
+            //     success: function (result) {
+            //         if (result.success) {
+            //             //alert(result.returnData);
+
+
+
+
+            //             modelEditAnswer.modal('hide');
+            //             ShowMsgSuccess(result.returnData);
+            //         } else {
+            //             //alert(result.returnData);
+            //             ShowMsgError(result.returnData);
+            //             modelEditAnswer.modal('show');
+
+            //         }
+            //     },
+            //     error: function (err) {
+            //         return false;
+            //     }
+            // });
+        }
+
+        // function updateRow(elementobj) {
+
+        //     var formData = new FormData();
+        //     var rowid = $(elementobj).data("rowid");
+        //     var inspectioId = $("#hfInspectioId").val();
+
+        //     var row = $(elementobj).closest('tr'); // Get the closest table row to the clicked anchor
+        //     //var partName = row.find('td:eq(0)').text(); // Get the text of the first cell (Part Name)
+        //     //var question = row.find('td:eq(1)').text(); // Get the text of the second cell (Question)
+        //     var answer = row.find('.js-chkYesNo').prop('checked') ? 1 : 0; // Get the value of the checkbox (Answer)
+        //     var notes = row.find('.js-notes').val(); // Get the value of the input field (Note)
+        //     //var picture = row.find('#filePicEdit').val(); // Get the value of the file input (Picture)
+        //     var picture = row.find('#filePicEdit')[0].files[0]; // Get the value of the file input (Picture)
+        //     //var rowId = row.find('td:eq(6)').text(); // Get the value of the hidden cell (Row ID)
+
+        //     formData.append("inspectioId", inspectioId);
+        //     formData.append("rowid", rowid);
+        //     formData.append("answer", answer);
+        //     formData.append("notes", notes);
+        //     formData.append("ImageAfter", picture);
+
+        //     $.ajax({
+        //         url: '/Report/UpdateRow', // Replace 'YourController' with your actual controller name
+        //         type: 'POST',
+        //         data: formData,
+        //         processData: false, // Prevent jQuery from processing the data
+        //         contentType: false, // Prevent jQuery from setting contentType
+        //         success: function (response) {
+        //             // Handle success
+        //             //console.log('Image uploaded successfully');
+        //             if (response.success == true) {
+        //                 ShowMsgSuccess("updated data");
+        //             }
+        //             else {
+
+        //                 ShowMsgError("can not updated");
+        //             }
+        //         },
+        //         error: function (xhr, status, error) {
+        //             // Handle error
+        //             console.error('Error uploading image:', error);
+        //         }
+        //     });
+        // }
+    </script>
+}

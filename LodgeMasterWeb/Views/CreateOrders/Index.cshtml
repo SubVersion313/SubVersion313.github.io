@@ -1,0 +1,489 @@
+﻿@model OrderStepOneViewModel
+@using Newtonsoft.Json;
+@inject IHttpContextAccessor HttpContextAccessor
+@{
+    Layout = "_Layout_main";
+}
+@{
+    var permissions = new List<KeyValuePair<string, string>>();
+
+    // استرجاع الصلاحيات من الجلسة إذا كانت موجودة
+    var permissionsJson = HttpContextAccessor.HttpContext.Session.GetString("UserPermissions");
+
+    if (!string.IsNullOrEmpty(permissionsJson))
+    {
+        permissions = JsonConvert.DeserializeObject<List<KeyValuePair<string, string>>>(permissionsJson);
+    }
+
+    // التحقق من وجود صلاحيات معينة
+    bool canRole = permissions.Any(c => c.Key == "Permission" && c.Value == "Permissions.Role.View");
+    bool canEdit = permissions.Any(c => c.Key == "Permission" && c.Value == "Permissions.StaffManagement.Edit");
+    bool canDelete = permissions.Any(c => c.Key == "Permission" && c.Value == "Permissions.StaffManagement.Delete");
+}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-lg-12 pt-3">
+            <header class="header-filter">
+                <div class="group-filter d-flex">
+                    @*<div class="input-group me-3">
+                    <input class="form-control" type="search" placeholder="Search" aria-label="Recipient's username" aria-describedby="button-addon2">
+                    <button class="btn btn-outline-master" id="button-addon2" type="button"> <i class="fa-solid fa-magnifying-glass"></i></button>
+                    </div>
+                    <button class="btn btn-outline-master d-flex align-items-center" type="button" data-bs-toggle="modal" data-bs-target="#exampleModal"> <i class="fa-solid fa-arrow-down-wide-short me-2"></i>Filter</button>
+                    *@
+                </div>
+                <div class="date">
+                    @ViewBag.DisplayCurrntDate
+                </div>
+@*                 <a class="btn btn-master d-flex align-items-center rounded-pill btn-Create-Order" asp-controller="CreateOrders" asp-action="Index">
+                    <i class="fa-solid fa-plus me-2"></i>Create Order
+                </a> *@
+                <div class="dropdown">
+                    <button class="btn btn-primary dropdown-toggle rounded-pill btn-master" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="fa-solid fa-plus me-2"></i> Create
+                    </button>
+                    <ul class="dropdown-menu bg-primary text-white">
+                        @if (permissions != null && permissions.Any(c => c.Key == "Permission" && c.Value == "Permissions.CreateOrders.Create"))
+                        {
+                            <li><a class="dropdown-item text-white" asp-controller="CreateOrders" asp-action="Index"><i class="fa-solid fa-plus me-2"></i> Order</a></li>
+                        }
+                        @if (permissions != null && permissions.Any(c => c.Key == "Permission" && c.Value == "Permissions.InspectionOrder.Create"))
+                        {
+                            <li><a class="dropdown-item text-white" asp-controller="InspectionOrder" asp-action="InspectionOrder"><i class="fa-solid fa-plus me-2"></i> Room inspiction</a></li>
+                        }
+                    </ul>
+                </div>
+            </header>
+        </div>
+    </div>
+</div>
+<div class="PageView1">
+    <div id="pageMasterLoad">
+        <div class="Create-Order">
+            <div class="container-fluid">
+                <div class="row">
+                    <div class="col-lg-12">
+                        <div class="Create-Order GeneralAddItem mt-4">
+                            <div class="container-fluid">
+
+                                <div class="row">
+                                    <div class="col-lg-12">
+                                        <div class="card-master">
+                                            <div class="title-card position-relative text-center">
+                                                @* <a class="position-absolute top-0 start-0" ><i class="fa-solid fa-arrow-left-long"></i></a> *@
+                                                <h4 class="mb-4">Create Order</h4>
+                                            </div>
+                                            <div class="body-card">
+                                                <form method="post">
+                                                    <input type="hidden" id="hdBasketId" value="" asp-for="BasketID" />
+                                                    <input type="hidden" id="hdLocationId" value="" asp-for="LocationID" />
+                                                    <div class="container-fluid">
+                                                        <div class="row justify-content-center">
+                                                            <div class="col-lg-9 col-md-10 col-sm-12">
+                                                                <div class="add-item-order mb-4">
+                                                                    <div class="row">
+                                                                        <div class="col-lg-8 col-md-8 col-sm-12">
+                                                                            <div id="exampleDataList">
+                                                                                <div class="form-group">
+                                                                                    <input type="text" id="autoLocation" class="form-control" placeholder="search location" />
+                                                                                    <input type="hidden" id="autoLocationID" />
+                                                                                    @*<select asp-items="Model.LstLocations" class="form-select js-select" id="ddLocation">
+                                                                                    </select> *@
+                                                                                    @*<input class="form-control" id="txtLocation" list="datalistLocation" placeholder="location to search...">
+                                                                                    <datalist id="datalistLocation" asp-items="Model.LstLocations">
+
+                                                                                    </datalist> *@
+
+                                                                                </div>
+@*                                                                                 <div class="dropdown">
+                                                                                    <input id="searchInput" type="text" class="form-control" placeholder="Search">
+                                                                                    <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-expanded="false">
+                                                                                        Dropdown button
+                                                                                    </button>
+                                                                                    <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton" id="dropdownMenu">
+                                                                                        <!-- Filtered data will be displayed here -->
+                                                                                    </ul>
+                                                                                </div> *@
+
+                                                                            </div>
+                                                                            @*  <span class="badge text-bg-secondary label-info" style="display: none"> </span> *@
+                                                                        </div>
+                                                                        <div class="col-lg-2 col-md-2 col-sm-6">
+                                                                            @* <button class="btn btn-master w-100" id="AddLocation">Add</button> *@
+                                                                        </div>
+                                                                        <div class="col-lg-2 col-md-2 col-sm-6">
+                                                                            @*  <button class="btn btn-light w-100 rest-info" id="ResetLocation" disabled>Reset</button> *@
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                                <div class="add-item-order mb-4">
+                                                                    <div class="row">
+                                                                        <div class="col-lg-8 col-md-8 col-sm-12 mb-3">
+                                                                            <div class="form-group">
+                                                                                <input type="text" id="autoitems" class="form-control" placeholder="search item" />
+                                                                                <input type="hidden" id="autoItemID" />
+                                                                                @*<select asp-items="Model.LstItems" class="form-select js-select" id="ddlItems">
+                                                                                </select> *@
+
+                                                                            </div>
+                                                                        </div>
+                                                                        <div class="col-lg-4 col-md-4 col-sm-12 mb-3">
+                                                                            <div class="increment-item">
+                                                                                <div class="input-group">
+                                                                                    <button class="btn btn-outline-master btn-decrease" id="decrementButton" type="button"> <i class="fa-solid fa-minus"></i></button>
+                                                                                    <input class="form-control" id="inputCount" type="text" min="1" max="99" value="1" readonly>
+                                                                                    <button class="btn btn-outline-master btn-increase" id="incrementButton" type="button"> <i class="fa-solid fa-plus"></i></button>
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div class="mb-3">
+                                                                        <textarea class="form-control" id="txtnotes" rows="3" placeholder="Notes"></textarea>
+                                                                    </div>
+                                                                    <div class="mb-3">
+                                                                        @* <button type="button" class="btn btn-master w-100" id="AddOrder">Add</button> *@
+                                                                        <button type="button" class="btn btn-master w-100" onclick="AddItems()" id="AddOrderBasket">Add</button>
+                                                                    </div>
+                                                                </div>
+                                                                <h5 class="mb-4">Selected Items: </h5>
+                                                                <div class="d-flex flex-wrap mb-4" id="contentValue">
+                                                                </div>
+                                                                <button class="btn btn-dark d-block w-100 p-3" type="submit" asp-action="Index">Next</button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="PageView2" style="display:none;">
+    <div id="LoadViewOderDetailsDiv"></div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            var cachedData = null;
+
+            // Fetch data when the page loads
+            fetchData();
+
+            function fetchData() {
+                $.get('/CreateOrders/GetAllLocation', function (data) {
+                    cachedData = data;
+                    // After data is fetched, bind input event listener
+                    $("#searchInput").on("input", function () {
+                        var searchText = $(this).val().toLowerCase();
+                        if (cachedData) {
+                            var filteredData = cachedData.filter(function (item) {
+                                return item.label.toLowerCase().includes(searchText);
+                            });
+                            displayFilteredData(filteredData);
+                        }
+                    });
+                });
+            }
+
+            // Function to display filtered data in the dropdown list
+            function displayFilteredData(data) {
+                $("#dropdownMenu").empty();
+                data.forEach(function (item) {
+                    $("#dropdownMenu").append(`<a class="dropdown-item" href="#">${item.label}</a>`);
+                });
+            }
+            // // Check if data is cached in sessionStorage
+            // var locationData = sessionStorage.getItem('locationData');
+            // if (locationData) {
+            //     populateDropdown(JSON.parse(locationData));
+            // } else {
+            //     // Fetch data from the server if not cached
+            //     fetchData();
+            // }
+
+            // // Function to fetch data from the server
+            // function fetchData() {
+            //     $.get('/CreateOrders/GetAllLocation', function (data) {
+            //         // Cache the data in sessionStorage
+            //         sessionStorage.setItem('locationData', JSON.stringify(data));
+            //         populateDropdown(data);
+
+            //     });
+            // }
+
+            // // Function to populate the dropdown list
+            // function populateDropdown(data) {
+            //     var dropdown = $('#dropdownList');
+            //     dropdown.empty();
+            //     $.each(data, function (index, item) {
+            //         dropdown.append($('<option>').text(item.LocationName).attr('value', item.LocationID));
+            //     });
+            // }
+
+            // // Filter the dropdown list based on user input
+            // $('#searchInput').on('input', function () {
+            //     var searchValue = $(this).val().toLowerCase();
+            //     $('#dropdownList option').filter(function () {
+            //         $(this).toggle($(this).text().toLowerCase().indexOf(searchValue) > -1);
+            //     });
+            // });
+        });
+
+        // function OnClickNext() {
+        //     var LocationID = $("#autoLocationID").val();
+        //     var LocationText = $("#autoLocation").val();
+
+        //     if (LocationID == null || LocationID == "" || LocationID == undefined) {
+        //         alert('Please select Location');
+        //         return false;
+        //     }
+        //     if (LocationText == null || LocationText == "" || LocationText == undefined) {
+        //         alert('Please select Location');
+        //         return false;
+        //     }
+
+
+        //     $.ajax({
+        //         url: '@Url.Action("Index", "CreateOrders")',
+        //         type: 'POST',
+        //         dataType: 'html',
+        //         data: { "dataObj": dataObj },
+        //         caches:false,
+        //         success: function (data) {
+        //             //$("#LoadViewOderDetailsDiv").html("").append(data);
+        //         }
+        //     });
+        // }
+        // function OnClickNext2() {
+        //     $(".PageView1").hide();
+        //     $(".PageView2").show();
+        //     var dataObj = {};
+        //     dataObj.X = 1;
+        //     dataObj.y = 2;
+        //     dataObj.z = 3;
+        //     $.ajax({
+        //         url: '@Url.Action("OderDetails", "CreateOrders")',
+        //         type: 'POST',
+        //         dataType: 'html',
+        //         data: { "dataObj": dataObj },
+        //         success: function (data) {
+        //             $("#LoadViewOderDetailsDiv").html("").append(data);
+        //         }
+        //     });
+        // }
+        function AddItems() {
+
+
+            var SelectItem = $("#autoItemID").val();
+            var DisplayText = $("#autoitems").val();
+
+            var Qty = $("#inputCount").val();
+            var txtnotes = $("#txtnotes").val();
+            var hdBasketId = $("#hdBasketId");
+
+            //alert(Qty);
+            //alert(txtnotes);
+            if (SelectItem == null || SelectItem == "" || SelectItem == undefined) {
+                //alert('Please select item');
+                ShowMsgError('Please select item');
+                return false;
+            }
+            if (DisplayText == null || DisplayText == "" || DisplayText == undefined) {
+                //alert('Please select item');
+                ShowMsgError('Please select item');
+                return false;
+            }
+            var notesdata = '';
+            var BasketId = '';
+            //var isfound = 0;
+            if (txtnotes != null) {
+                notesdata = txtnotes;
+            };
+            if (hdBasketId.val() != null) {
+                BasketId = hdBasketId.val();
+            };
+            //alert(BasketId);
+            var objData = {
+
+                ItemID: SelectItem,
+                ItemName: DisplayText,
+                Qty: Qty,
+                Notes: notesdata,
+                BasketID: BasketId
+                // CompanyID=,
+                // DepartmentID=,
+                // EmpAssignID=,
+                // EmpID=
+            };
+            //console.log(objData)
+            JsonData = JSON.stringify(objData);
+
+
+            $.ajax({
+                url: '/CreateOrders/AddItemBasket',
+                method: 'POST',
+                contentType: 'application/json',
+                data: JsonData,
+                cache: false,
+                success: function (data) {
+                    //alert('showListItems');
+                    if (data != null) {
+                        //alert(data);
+                        hdBasketId.val(data);
+                        showListItems(data);
+                    }
+
+                    //alert('showListItems2');
+
+                },
+                error: function (error) {
+
+                    //alert('Bad');
+                }
+
+
+            });
+
+        };
+        // function DeleteItems() {
+
+        //     let ddlItems = $('#ddlItems');
+        //     var SelectItem = $("#ddlItems").val();
+        //     var DisplayText = $("#ddlItems option:selected").text();
+        //     var Qty = $("#inputCount").val();
+        //     var txtnotes = $("#txtnotes").val();
+
+        //     var objData = {
+        //         ItemID: SelectItem
+        //     };
+        //     //console.log(objData)
+        //     JsonData = JSON.stringify(objData);
+
+
+        //     $.ajax({
+        //         url: '/CreateOrders/DeleteItemBasket',
+        //         method: 'POST',
+        //         contentType: 'application/json',
+        //         data: JsonData,
+        //         cache: false,
+        //         success: function (data) {
+        //             //alert('showListItems');
+        //             showListItems();
+        //            // alert('showListItems2');
+
+        //         },
+        //         error: function (error) {
+
+        //             //alert('Bad');
+        //         }
+
+
+        //     });
+
+        // };
+        function showListItems(orderGuid) {
+            //let contentValue = $("#contentValue");
+
+
+            $.ajax({
+                url: '/CreateOrders/GetAllItems',
+                method: 'GET',
+                //contentType: 'application/json',
+                data: { orderid: orderGuid },
+                cache: false,
+
+                success: function (data) {
+                    // //console.log(data); // Log the data to the console
+                    // var contentItem = '';
+                    // // For example, if 'data' is an array of items, you can loop through them
+                    // for (var i = 0; i < data.length; i++) {
+                    //     var item = data[i];
+                    //     //console.log("Item ID: " + item.itemID);
+                    //     //console.log("Item Name: " + item.itemName);
+                    //     // Access other properties as needed
+
+                    //     contentItem += `<span class="badge-item mx-2 mb-3" data-itemid="${item.itemID}"  data-orderId="${item.orderId}"
+                    //                                        data-qty="${item.qty}" data-notes="${item.notes}" data-itemname="${item.itemName}" data-ddLocation="${item.itemName}">
+                    //                                ${item.itemName}
+                    //                                <span class="badge-number">${item.qty}</span>
+                    //                                <span class="icon-exit"><i class="fa-solid fa-xmark fa-fw"></i></span>
+                    //                                </span>`;
+
+                    // }
+                    if (data.success == true) {
+                        $("#contentValue").html(data.contentItems);
+                    }
+                },
+                error: function (error) {
+
+                    alert('Bad');
+                }
+
+
+            });
+        };
+        function sendDataToServer() {
+            var jsonArray = [];
+            var LocationID = "";// 'rn101';
+
+            $("#contentValue .badge-item").each(function (index) {
+
+                //alert("This is Add " + SelectItem);
+
+                var itemid = $(this).data("itemid");
+                var itemname = $(this).data("itemname");
+                var qty = $(this).data("qty");
+                var notes = $(this).data("notes");
+                if (notes == null) {
+                    notes = "";
+                }
+                var dataToSend = {
+                    ItemID: itemid,
+                    ItemName: itemname,
+                    qty: qty,
+                    Notes: notes,
+                    DepartmentID: '',
+                    EmployeeID: '',
+                    EmployeeName: ''
+                };
+                //console.log(dataToSend);
+
+                jsonArray.push(dataToSend);
+            });
+
+            //console.log(jsonArray);
+
+            $.ajax({
+                type: 'POST',
+                url: '/CreateOrders/fillitems', // Replace 'ControllerName' with your actual controller name
+                data: JSON.stringify({ term: jsonArray, Locationid: LocationID }),
+                contentType: 'application/json',
+                success: function (response) {
+                    // Handle success, if needed
+                    alert("ok");
+                },
+                error: function (error) {
+                    // Handle error, if needed
+                    alert("bad " + error);
+                }
+            });
+        }
+        // function fetchData() {
+        //     $.get('/CreateOrders/GetAllLocation', function (data) {
+        //         // Cache the data in sessionStorage
+        //         //sessionStorage.setItem('locationData', JSON.stringify(data));
+        //         //populateDropdown(data);
+        //         cachedData = data;
+
+        //     });
+        // }
+    </script>
+}

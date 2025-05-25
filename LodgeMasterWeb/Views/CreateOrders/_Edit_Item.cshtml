@@ -1,0 +1,143 @@
+﻿@model ItemViewModel
+ <div class="container-fluid">
+    <div class="row">
+        <div class="Blockdataupdatebascket">
+        <div class="col-lg-8 mb-3">
+            <div class="form-group">
+                    <select class="form-select form-control-lg" 
+                    data-olditemid="@Model.OldItemID" 
+                    data-basketid="@Model.BasketID" 
+                    data-orderid="@Model.BasketOrderId" 
+                    id="ddlChangItem" 
+                    asp-items="Model.LstItems" 
+                    asp-for="OldItemID">
+                </select>
+            </div>
+        </div>
+        <div class="col-lg-4 mb-3">
+            <div class="increment-item">
+                <div class="input-group">
+                    <button class="btn btn-outline-master btn-decrease" id="ModaldecrementButton" type="button"> <i class="fa-solid fa-minus"></i></button>
+                    <input class="form-control text-center" id="ModalinputCount" type="text" min="1" max="99" value="@Model.OldItemQty" readonly>
+                    <button class="btn btn-outline-master btn-increase" id="ModalincrementButton" type="button"> <i class="fa-solid fa-plus"></i></button>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-12 mb-3">
+            <h5 class="mb-2">Items</h5>
+            <div class="label-Assignee">
+                <div class="text">@Model.OldItemName ( @Model.OldItemQty )</div>
+            </div>
+        </div>
+
+        <div class="col-lg-12 mb-3">
+            <h5 class="mb-2">Department</h5>
+            <div class="form-group">
+                <select class="form-select form-control-lg" 
+                    data-basketid="@Model.BasketID" 
+                    data-orderid="@Model.BasketOrderId" 
+                    id="ddlChangDepartment" 
+                    
+                    asp-items="Model.LstDepartment" asp-for="OldDepartmentID">
+                </select>
+            </div>
+        </div>
+@*         <div class="col-lg-12 mb-3">
+            <h5 class="mb-2">Assignee</h5>
+            <div class="form-group">
+                <select class="form-select form-control-lg" data-basketid="@Model.BasketID4" data-orderid="@Model.BasketOrderId" id="ddlChangAssignee" asp-items="Model.LstEmpAssignee" asp-for="OldEmpAssigneeID">
+                </select>
+            </div>
+        </div> *@
+        </div>
+    </div>
+</div>
+
+
+<script>
+    $("#ModalincrementButton").click(function () {
+        if ($("#ModalinputCount").val() < 99) {
+            $("#ModalinputCount").val(parseInt($("#ModalinputCount").val()) + 1);
+        }
+    });
+    $("#ModaldecrementButton").click(function () {
+        if ($("#ModalinputCount").val() > 1) {
+            $("#ModalinputCount").val(parseInt($("#ModalinputCount").val()) - 1);
+        }
+    });
+
+    $("#ddlChangDepartment").change(function () {
+        //alert("in");
+        var departmentData = $('#ddlChangDepartment').val();
+        //alert(departmentData);
+        if (departmentData == null || departmentData == "" || departmentData == undefined) {
+           // alert('Error inside order Basketid');
+            return false;
+        }
+        $.ajax({
+            url: '@Url.Action("GetEmpDepartment", "Dashboard")',
+            type: "GET",
+            dataType: "json",
+            data: { "dep": departmentData },
+            cache: false,
+            success: function (result) {
+                var ddlChangAssignee = $('#ddlChangAssignee');
+               // alert("return");
+                if (result.success) {
+                    //alert("true");
+                    ddlChangAssignee.empty();
+                    // ddlChangAssignee.append($("<option></option>")
+                    //     .attr("value", "0")
+                    //     .text("Select Employee"));
+                    result.returnData.forEach(function (item) {
+                        ddlChangAssignee.append($("<option></option>")
+                            .attr("value", item.value)
+                            .text(item.text));
+                    });
+                } else {
+                    alert(result.message);
+                }
+            },
+            error: function (err) {
+                return false;
+            }
+        });
+    });  
+    // function getEmpDepartment() {
+       
+    //     var departmentData = $('#ddlChangDepartment').val();
+
+    //     if (departmentData == null || departmentData == "" || departmentData == undefined) {
+    //         //alert('Error inside order Basketid');
+    //         return false;
+    //     }
+    //     $.ajax({
+    //         url: '@Url.Action("GetEmpDepartment", "Dashboard")',
+    //         type: "GET",
+    //         dataType: "json",
+    //         data: { "dep": DepartmentData },
+    //         cache: false,
+    //         success: function (result) {
+    //             var ddlChangAssignee = $('#ddlChangAssignee');
+
+    //             if (result.success) {
+    //                 ddlChangAssignee.empty();
+    //                 // ddlChangAssignee.append($("<option></option>")
+    //                 //     .attr("value", "0")
+    //                 //     .text("Select Employee"));
+    //                 result.returnData.forEach(function (item) {
+    //                     ddlChangAssignee.append($("<option></option>")
+    //                         .attr("value", item.value)
+    //                         .text(item.text));
+    //                 });
+    //             } else {
+    //                 alert(result.message);
+    //             }
+    //         },
+    //         error: function (err) {
+    //             return false;
+    //         }
+    //     });
+    // }
+
+</script>

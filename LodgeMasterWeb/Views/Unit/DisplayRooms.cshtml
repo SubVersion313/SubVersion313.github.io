@@ -1,0 +1,1116 @@
+﻿@* @model List<RoomTypeManagmentVM> *@
+@model IEnumerable<RoomTypeManagmentVM>
+@using Newtonsoft.Json;
+@inject IHttpContextAccessor HttpContextAccessor
+@{
+    Layout = "_Layout_main";
+
+}
+
+@{
+    var permissions = new List<KeyValuePair<string, string>>();
+
+    // استرجاع الصلاحيات من الجلسة إذا كانت موجودة
+    var permissionsJson = HttpContextAccessor.HttpContext.Session.GetString("UserPermissions");
+
+    if (!string.IsNullOrEmpty(permissionsJson))
+    {
+        permissions = JsonConvert.DeserializeObject<List<KeyValuePair<string, string>>>(permissionsJson);
+    }
+
+    // التحقق من وجود صلاحيات معينة
+    bool canRole = permissions.Any(c => c.Key == "Permission" && c.Value == "Permissions.Role.View");
+    bool canEdit = permissions.Any(c => c.Key == "Permission" && c.Value == "Permissions.StaffManagement.Edit");
+    bool canDelete = permissions.Any(c => c.Key == "Permission" && c.Value == "Permissions.StaffManagement.Delete");
+}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-lg-12 pt-3">
+            <header class="header-filter">
+                <div class="group-filter d-flex">
+                    @* <div class="input-group me-3">
+                    <input class="form-control" type="search" placeholder="Search" aria-label="Recipient's username" aria-describedby="button-addon2">
+                    <button class="btn btn-outline-master" id="button-addon2" type="button"> <i class="fa-solid fa-magnifying-glass"></i></button>
+                    </div>
+                    <button class="btn btn-outline-master d-flex align-items-center" type="button" data-bs-toggle="modal" data-bs-target="#exampleModal"> <i class="fa-solid fa-arrow-down-wide-short me-2"></i>Filter</button>
+                    *@
+                </div>
+                <div class="date">
+                    @ViewBag.DisplayCurrntDate
+                </div>
+                @*                 <a class="btn btn-master d-flex align-items-center rounded-pill btn-Create-Order" asp-controller="CreateOrders" asp-action="Index">
+                <i class="fa-solid fa-plus me-2"></i>Create Order
+                </a> *@
+                <div class="dropdown">
+                    <button class="btn btn-primary dropdown-toggle rounded-pill btn-master" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="fa-solid fa-plus me-2"></i> Create
+                    </button>
+                    <ul class="dropdown-menu bg-primary text-white">
+                        @if (permissions != null && permissions.Any(c => c.Key == "Permission" && c.Value == "Permissions.CreateOrders.Create"))
+                        {
+                            <li><a class="dropdown-item text-white" asp-controller="CreateOrders" asp-action="Index"><i class="fa-solid fa-plus me-2"></i> Order</a></li>
+                        }
+                        @if (permissions != null && permissions.Any(c => c.Key == "Permission" && c.Value == "Permissions.InspectionOrder.Create"))
+                        {
+                            <li><a class="dropdown-item text-white" asp-controller="InspectionOrder" asp-action="InspectionOrder"><i class="fa-solid fa-plus me-2"></i> Room inspiction</a></li>
+                        }
+                    </ul>
+                </div>
+            </header>
+        </div>
+    </div>
+</div>
+
+<div class="rooms-status" id="pageMasterLoad">
+    <div class="container-fluid pt-3">
+        <div id="GeneralCategories" class="over-view" style="--Num-columns-xl: 6; --Num-columns-md: 3 ; --Num-columns-sm: 2 ">
+        </div>
+        <div class="container-room">
+            <div class="d-flex justify-content-end">
+                <button class="filter btn rounded-pill btn-outline-success px-4 me-3" onclick="addFloor()"><i class="fa-solid fa-plus me-2"></i>Add Floor</button>
+                <button class="filter btn btn-master  rounded-pill btn-Create-Order px-4 me-3" data-bs-toggle="modal" data-bs-target="#CategoryRoom">Set Category</button>
+                <button class="filter btn btn-success rounded-pill btn-Create-Order px-4" onclick="saveroomdata()" >Save and Finish</button>
+            </div>
+            @foreach (var floorGroup in Model.GroupBy(r => r.Floor))
+            {
+                <div class="floor">
+                    <h4 class="d-flex justify-content-between">
+                        @* <a data-bs-toggle="modal" data-bs-target="#EditFloorName" data-flooridlink="@floorGroup.Key" onclick="editFloorName(this)"> *@
+                        <a data-flooridlink="@floorGroup.Key" onclick="editFloorName(this)" >
+                            <div class="text js-floorlabel" data-flooridlabel="fl_@floorGroup.Key">Floor @floorGroup.Key</div>
+                        </a>
+                        <div class="group-button">
+                            @*<button class="btn btn-outline-success me-2 rounded-pill" data-bs-toggle="modal" data-bs-target="#AddRoomInFloor"><i class="fa-solid fa-plus me-2"></i> Add</button>
+                        <button class="btn btn-outline-primary rounded-pill" data-bs-toggle="modal" data-bs-target="#EditRoomName"><i class="fa-solid fa-edit  me-2"></i>Edit</button> *@
+
+                            <button class="btn btn-outline-success me-2 rounded-pill" data-addroomname="@floorGroup.Key" onclick="addRoom(this)" ><i class="fa-solid fa-plus me-2"></i>Add</button>
+                            <button class="btn btn-outline-primary rounded-pill" data-editroomname="@floorGroup.Key" onclick="editRoomName(this)" ><i class="fa-solid fa-edit  me-2"></i>Edit</button>
+                            <button class="btn btn-outline-danger rounded-pill" data-removeroomname="@floorGroup.Key" onclick="removeRoom(this)" ><i class="fa-solid fa-trash-can  me-2"></i>Remove</button>
+                        </div>
+                    </h4>
+                    <div class="container-floor js-floorRow" data-flooridrepeater="@floorGroup.Key">
+
+                        @foreach (var room in floorGroup)
+                        {
+                            <div class="js-colorType card-room " title="" >
+                                <input class="js-roomcheck" id="@room.RoomId" type="checkbox" name="" data-catid="@room.CatId" data-id="@room.RoomId"
+                                       data-number="@room.RoomNumber" data-flooridroom="fr_@floorGroup.Key" >
+                                <label for="@room.RoomId" >
+                                    <div class="icon" >
+                                        <div class="fa-solid fa-bed" > </div>
+                                    </div>
+                                    <h5 class="text" >@room.RoomNumber</h5>
+                                </label>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+
+<div class="modal fade model-filter-home" id="CategoryRoom" tabindex="-1" aria-labelledby="CategoryLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h1 class="modal-title fs-5" id="exampleModalLabel">select Category</h1>
+                <button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="Categorybody">
+                <div class="container-fluid">
+                    <div class="row">
+                        <div class="col-lg-12 mb-2">
+                            <div class="form-group">
+                                <label>Category Name</label>
+                                <select class="form-control" id="DDLRoomCat"></select>
+                                <select style="display:none;" id="DDLRoomCatColor"></select>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer justify-content-start">
+                <button class="btn btn-primary btn-apply rounded-pill col-12" type="button" onclick="setRoomCat()" >select </button>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade model-filter-home" id="AddRoomInFloor" tabindex="-1" aria-labelledby="AddRoomInFloorLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h1 class="modal-title fs-5" id="exampleModalLabel">Add Room</h1>
+                <button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="Categorybody">
+                <div class="container-fluid">
+                    <div class="row">
+                        @*<div class="col-lg-12 mb-2">
+                        <div class="form-group">
+                        <label>Category Name</label>
+                        <select class="form-control" id="DDLAddRoomCat"></select>
+                        <select style="display:none;" id="DDLAddRoomCatColor"></select>
+                        </div>
+                        </div> *@
+                        <input type="hidden" id="hfFloorIdforRoom" />
+                        <div class="col-lg-12 mb-3">
+                            <div class="form-group">
+                                <label>Room Name</label>
+
+                                <input type="text" id="txtNewRoomName" class="form-control" />
+                            </div>
+                        </div>
+                        <div class="form-switch">
+                            <input class="form-check-input" id="chkRepateRoom" type="checkbox" role="switch">
+                            <label class="form-check-label" for="flexCheckDefault">Repeat in all Floors</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer justify-content-start">
+                <button class="btn btn-primary btn-apply rounded-pill col-12" type="button" onclick="saveaddRoom()" >Add Room</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade model-filter-home" id="EditRoomName" tabindex="-1" aria-labelledby="EditRoomNameLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h1 class="modal-title fs-5" id="exampleModalLabel">Edit Room Name</h1>
+                <button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="EditFloorNamebody">
+                <div class="container-fluid">
+                    <div class="row">
+                        <div class="col-lg-12 mb-2">
+                            <input type="hidden" id="hfFloorId" />
+                            <div class="form-group">
+                                <label>Room Name</label>
+                                <input type="text" id="txtEditRoomName" class="form-control" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer justify-content-start">
+                <button class="btn btn-primary btn-apply rounded-pill col-12" type="button" onclick="saveRoomName()" >Save</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade model-filter-home" id="AddFloor" tabindex="-1" aria-labelledby="AddFloorLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h1 class="modal-title fs-5" id="exampleModalLabel">Add Floor Name</h1>
+                <button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="AddFloorNamebody">
+                <div class="container-fluid">
+                    <div class="row">
+                        <div class="col-lg-12 mb-2">
+                            @* <input type="hidden" id="hfRoomId" /> *@
+                            <div class="form-group">
+                                <label>Floor Name</label>
+                                <input type="text" id="txtNewFloorName" class="form-control" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer justify-content-start">
+                <button class="btn btn-primary btn-apply rounded-pill col-12" type="button" onclick="saveAddFloorName()" >Add</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade model-filter-home" id="EditFloorName" tabindex="-1" aria-labelledby="EditFloorNameLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h1 class="modal-title fs-5" id="exampleModalLabel">Edit Floor Name</h1>
+                <button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="EditFloorNamebody">
+                <div class="container-fluid">
+                    <div class="row">
+                        <div class="col-lg-12 mb-2">
+                            <input type="hidden" id="hfRoomId" />
+                            <div class="form-group">
+                                <label>Floor Name</label>
+                                <input type="text" id="txtEditFloorName" class="form-control" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer justify-content-start">
+                <button class="btn btn-primary btn-apply rounded-pill col-12" type="button" onclick="saveFloorName()" >Save</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_validationscriptspartial" />
+    <script>
+        // $(document).ready(function () {
+        //     $('#transferToAvailable').click(function () {
+        //         $('#transferBackForm').submit();
+        //     });
+        // });
+        $(document).ready(function () {
+            drawRoomCat();
+            fillRoomCat();
+
+            $('#move-rooms').click(function () {
+                $('.room-checkbox:checked').each(function () {
+                    var listItem = $(this).closest('li');
+                    var roomId = $(this).val();
+                    var roomNumber = listItem.data('number');
+                    if (listItem.hasClass('selected-room') == false) {
+                        listItem.addClass('selected-room');
+                        $(this).prop('disabled', true).addClass('disabled-checkbox');
+
+                        $('#selected-rooms').append(new Option(roomNumber, roomId, catId));
+                    }
+
+                });
+                //checkListBoxItems();
+            });
+
+            $('#remove-room').click(function () {
+                var selectedRoom = $('#selected-rooms').val();
+                if (selectedRoom) {
+                    $('#selected-rooms option:selected').each(function () {
+                        var roomId = $(this).val();
+                        var roomItem = $('li[data-id="' + roomId + '"]');
+
+                        roomItem.removeClass('selected-room');
+                        roomItem.find('.room-checkbox').prop('disabled', false).removeClass('disabled-checkbox');
+
+                        $(this).remove();
+                    });
+                }
+                // checkListBoxItems();
+            });
+
+        });
+
+        function calccatnumber() {
+            var catIdList = generateCatIdList();
+            setCountNumForCatType(catIdList);
+        }
+
+        function drawRoomCat() {
+
+            $.ajax({
+                url: '@Url.Action("GenerateCategories", "Unit")',
+                type: "GET",
+                dataType: "json",
+                cache: false,
+                success: function (result) {
+                    if (result.success) {
+                        var CategoriesDisplay = $("#GeneralCategories");
+                        CategoriesDisplay.html(result.returnData)
+
+                    }
+                    else {
+                        ShowMsgError(result.message);
+                    }
+                },
+                error: function (err) {
+                    return false;
+                }
+            });
+
+        }
+        function fillRoomCat() {
+            var ddlRoomCat = $("#DDLRoomCat");
+            var ddlRoomCatColor = $("#DDLRoomCatColor");
+
+            $.ajax({
+                url: '@Url.Action("GetAllRoomCatwithColor", "Unit")',
+                type: "GET",
+                dataType: "json",
+                cache: false,
+                success: function (result) {
+                    if (result.success) {
+                        ddlRoomCat.empty();
+                        // ddlobject.append($("<option></option>")
+                        //     .attr("value", "0")
+                        //     .text("Select Inspection Name"));
+                        result.returnData.forEach(function (item) {
+                            ddlRoomCat.append($("<option></option>")
+                                .attr("value", item.value)
+                                .text(item.text));
+                        });
+                        //Fill color in ddl hide
+                        ddlRoomCatColor.empty();
+                        result.returnDataColor.forEach(function (item) {
+                            ddlRoomCatColor.append($("<option></option>")
+                                .attr("value", item.value)
+                                .text(item.text));
+                        });
+
+
+                    } else {
+                        ShowMsgError(result.message);
+                    }
+                },
+                error: function (err) {
+                    return false;
+                }
+            });
+        }
+        function setRoomCat() {
+
+            var ddlCat = $("#DDLRoomCat option:selected");
+            var ddlCatColor = $("#DDLRoomCatColor");
+
+            var catId = ddlCat.val();
+            var catName = ddlCat.text();
+            var CatColorName = "";
+
+
+            if (catId != null) {
+                //alert("1");
+                ddlCatColor.find('option').each(function () {
+                    var optionElement = $(this);
+                    // alert(optionElement.val());
+                    // alert(catId);
+                    if (optionElement.val() === catId) {
+                        //matchFound = true;
+                        //alert(optionElement.text());
+                        CatColorName = optionElement.text();
+                        return false;
+                    }
+                });
+            }
+
+            //var colorCat = "#005daa"; // You can set the desired color here or fetch it dynamically
+
+            // Loop through all selected checkboxes
+            $('.js-roomcheck:checked').each(function () {
+                //var roomId = $(this).data('id');
+                // Change the background color of the room
+                // $(this).data('catid', catId);
+                // //$(this).attr('data-catid', catId); // Using .attr()
+                // $(this).prop('checked', false);
+                // //$(this).data('catid', catId); // Using .data()
+
+                // // $(this).closest('.card-room').find('.icon').css('background-color', CatColorName);
+                // $(this).closest('.card-room').attr('style', '--main-color:' + CatColorName + ' !important;');
+
+                $(this).closest('.card-room').attr('style', '--main-color:' + CatColorName + ' !important;');
+                $(this).attr('data-catid', catId); // Set data-catid attribute
+                //console.log('Setting data-catid:', catId, 'on', this);
+                $(this).prop('checked', false);    // Uncheck the checkbox
+            });
+
+            // Prepare data to send to backend
+            // var selectedRooms = [];
+            // $('.js-roomcheck:checked').each(function () {
+            //     selectedRooms.push($(this).data('id'));
+            // });
+
+            // Example usage
+            var catIdList = generateCatIdList();
+            //console.log(catIdList);
+
+            // <div id='{item.UnitCatId}' class='card-item' style = '--main-color: {item.UnitCatColor}' >
+            //     <h3 id='lblCount_{item.UnitCatId}' class='number' > 0 < /h3>
+            //         < div class='title' > <i class='fa-solid fa-bed' > </i><span id='CatName_{item.UnitCatId}' class='text'>{item.UnitCatName}</span > </div>
+            //             < /div>";
+
+            setCountNumForCatType(catIdList);
+
+            $('#CategoryRoom').modal('toggle');
+            // $("#CategoryRoom").hide();
+            // var data = {
+            //     categoryId: catId,
+            //     rooms: selectedRooms
+            // };
+
+            // // Send data to backend for saving in database
+            // $.ajax({
+            //     url: '@Url.Action("SaveRoomCategories", "Unit")',
+            //     type: "POST",
+            //     data: JSON.stringify(data),
+            //     contentType: "application/json; charset=utf-8",
+            //     dataType: "json",
+            //     success: function (result) {
+            //         if (result.success) {
+            //             alert("Categories updated successfully!");
+            //         } else {
+            //             ShowMsgError(result.message);
+            //         }
+            //     },
+            //     error: function (err) {
+            //         ShowMsgError("An error occurred while saving the data.");
+            //     }
+            // });
+        }
+
+        function setCountNumForCatType(catIdList) {
+            // Loop through each card-item in GeneralCategories
+            $('#GeneralCategories .card-item').each(function () {
+                var cardItem = $(this);
+                var h3Tag = cardItem.find('h3.number');
+                var h3TagId = h3Tag.attr('id').replace('lblCount_', '');
+
+                if (h3TagId.length > 11) {
+                    //alert(h3TagId);
+                    // Find the matching category in catIdList
+                    var matchingCat = catIdList.find(function (cat) {
+                        return cat.catId === h3TagId;
+                    });
+
+                    // If a matching category is found, update the number
+                    if (matchingCat) {
+                        h3Tag.text(matchingCat.count);
+                        // console.log(h3Tag.text());
+                    } else {
+                        h3Tag.text('0'); // Set to 0 if no matching category
+                        //alert("0");
+                    }
+                }
+            });
+        }
+        function generateCatIdList() {
+            var catIdCounts = {};
+
+            var count = 0;
+            // Loop through each js-roomcheck input
+            $('.js-roomcheck').each(function () {
+                // Check if the checkbox is checked
+                //if ($(this).is(':checked')) {
+                //var catId = $(this).data('catid');
+                var catId = $(this).attr('data-catid');
+
+                //js-roomcheck js-catcheck
+                // If catId is not null or undefined
+                count += 1;
+                //console.log(count + '>' + catId);
+                if (catId) {
+                    // If catId is already in the catIdCounts object, increase the count
+                    //count += 1;
+                    if (catIdCounts[catId]) {
+                        catIdCounts[catId]++;
+
+                    } else {
+                        // Otherwise, initialize the count for this catId
+                        catIdCounts[catId] = 1;
+                        ;
+                    }
+                }
+                //}
+            });
+
+            //console.log(catIdCounts);
+            //console.log(count);
+            // Convert the catIdCounts object into a list of {catId, count} objects
+            var catIdList = Object.keys(catIdCounts).map(function (key) {
+                return {
+                    catId: key,
+                    count: catIdCounts[key]
+                };
+            });
+
+            return catIdList;
+        }
+
+        function createRoomCat() {
+
+            var unitCatName = $("#txtRoomCat").val();
+            var unitCatDescription = $("#txtRoomCat_Desc").val();
+            var chkActive = $("#chkActive_RoomCat");//.is(":checked");
+            var isActive = 0;
+
+            if (!unitCatName) {
+                // == null || unitCatName == "" || unitCatName==undefined) {
+                ShowMsgError("Please Enter Category Name");
+                return false;
+            }
+            if (chkActive.is(':checked') == true) {
+                isActive = 1;
+            }
+
+            var objData = {
+                UnitCatName: unitCatName,
+                UnitCatDescription: unitCatDescription,
+                bActive: isActive
+            }
+            var jsonData = JSON.stringify(objData);
+
+            $.ajax({
+                url: '@Url.Action("AddRoomCat", "Unit")',
+                type: "POST",
+                dataType: "json",
+                data: { "dataObj": jsonData },
+                cache: false,
+                success: function (result) {
+                    if (result.success) {
+                        FillRoomCat();
+                        //$("#AddCategoryRoom").hide();
+                    } else {
+                        ShowMsgError(result.message);
+                        $("#AddCategoryRoom").show();
+                    }
+                },
+                error: function (err) {
+                    return false;
+                }
+            });
+        }
+        function saveRooms() {
+
+            var ddlRoomCat = $("#ddlRoomCat").val();
+            //var selectedRooms = $("#selected-rooms");
+            var selectRoomsCount = $("#selected-rooms option").length;
+
+            var selectedRooms = [];
+
+            //alert("1");
+            if (!ddlRoomCat) {
+                // == null || unitCatName == "" || unitCatName==undefined) {
+                ShowMsgError("Please select Room Type");
+                return false;
+            }
+
+            if (selectRoomsCount = 0) {
+                // == null || unitCatName == "" || unitCatName==undefined) {
+                //alert("5");
+                ShowMsgError("Please select Room name");
+                return false;
+            }
+            //alert("3");
+            // var objData = {
+            //     UnitCatName: unitCatName,
+            //     UnitCatDescription: unitCatDescription,
+            //     bActive: isActive
+            // }
+
+            $('#selected-rooms option').each(function () {
+                selectedRooms.push($(this).text());
+            });
+            var requestData = {
+                catroom: ddlRoomCat,
+                roomIds: selectedRooms
+            };
+
+
+            $.ajax({
+                url: '@Url.Action("CreateRoomList", "Unit")',
+                type: "POST",
+                //dataType: "json",
+                // data: { "dataObj": jsonData, "catroom": ddlRoomCat },
+                contentType: "application/json",
+                data: JSON.stringify(requestData),
+                cache: false,
+                success: function (result) {
+                    if (result.success) {
+                        removeListBoxItems();
+                        ShowMsgSuccess(result.returnData)
+
+                    } else {
+                        ShowMsgError(result.returnData);
+
+                    }
+                },
+                error: function (err) {
+                    return false;
+                }
+            });
+        }
+        function removeListBoxItems() {
+            $('#selected-rooms option').each(function () {
+                $(this).remove();
+            });
+        }
+        //floor action
+        function addFloor() {
+            $("#AddFloor").modal('show');
+        }
+        function saveAddFloorName() {
+            cloneLastFloor();
+
+            $("#AddFloor").modal('hide');
+        }
+        function cloneLastFloor() {
+            // Get the last floor block
+            var lastFloor = $('.floor').last();
+
+            // Clone the last floor block
+            var newFloor = lastFloor.clone();
+
+            // Update the new floor's attributes and content to ensure uniqueness
+            var newFloorId = parseInt(lastFloor.find('.js-floorlabel').data('flooridlabel').replace('fl_', '')) + 1;
+            //console.log("newFloorId:" +newFloorId);
+            newFloor.find('.js-floorlabel').attr('data-flooridlabel', 'fl_' + newFloorId).text('Floor ' + newFloorId);
+            newFloor.find('a').attr('data-flooridlink', newFloorId);
+            newFloor.find('.group-button .btn').each(function () {
+                $(this).attr('data-addroomname', newFloorId);
+                $(this).attr('data-editroomname', newFloorId);
+            });
+            newFloor.find('.js-floorRow').attr('data-flooridrepeater', newFloorId);
+            //console.log("flooridrepeater");
+            // Update the rooms' attributes within the new floor
+            var roomId = getMaxRoomid();
+            newFloor.find('.js-colorType').each(function () {
+                // var roomId = $(this).find('.js-roomcheck').data('id');
+                // var newRoomId = parseInt(roomId) + 1;
+                //var roomId = getMaxRoomid();
+                var newRoomId = parseInt(roomId);// + 1;
+
+                var roomNumber = $(this).find('.js-roomcheck').data('number').toString();
+                var newRoomNumber = newFloorId + roomNumber.substring(1);
+                //console.log("number:" + newRoomNumber);
+                $(this).find('.js-roomcheck').attr('id', newRoomId).data('id', newRoomId).data('flooridroom', 'fr_' + newFloorId).data('number', newRoomNumber);
+                $(this).find('label').attr('for', newRoomId);
+                $(this).find('h5').text(newRoomNumber);
+                //console.log("roomId:" + roomId);
+                roomId = parseInt(roomId) + 1;
+            });
+            //console.log(newFloorId); // Check the new floor ID
+            //console.log(newFloor.html()); // Check the cloned floor block before appending
+            // Append the new floor block to the parent container
+            // Wrap the new floor content with a div having class 'floor'
+            var newFloor1 = $('<div>', { class: 'floor' }).append(newFloor.contents());
+            console.log(newFloor1.html());
+            $('.floors-container').append(newFloor1);
+        }
+        function editFloorName(elementselect) {
+            //#EditFloorName
+
+            var element = $(elementselect);
+            $("#txtEditFloorName").val(element.data('flooridlink'));
+            $("#hfFloorId").val(element.data('flooridlink'));
+            // alert(element.data('flooridlink'));
+
+            $('#EditFloorName').modal('show');
+
+
+        }
+        function saveFloorName() {
+
+            var txtEditFloorName = $("#txtEditFloorName").val();
+            var hfFloorId = $("#hfFloorId").val();
+            //alert("d1");
+            if (!hfFloorId) {
+                ShowMsgError("Please select floor");
+                return false;
+            }
+            if (!txtEditFloorName) {
+                // == null || unitCatName == "" || unitCatName==undefined) {
+                ShowMsgError("Please Enter Floor Name");
+                return false;
+            }
+            //alert("d2");
+            $('.js-floorlabel').each(function () {
+
+                var floorid = $(this).data('flooridlabel');
+                //console.log(floorid);
+                if (floorid) {
+                    var flooridNumber = floorid.replace('fl_', '');
+                    //console.log(floorid);
+                    if (flooridNumber == hfFloorId) {
+                        $(this).attr('data-flooridlabel', 'fl_' + txtEditFloorName);
+                        $(this).text('Floor ' + txtEditFloorName);
+                        return false; // Break out of the loop
+                    }
+                }
+            });
+            $('#EditFloorName').modal('hide');
+        }
+
+        ///end floor aaction///
+
+        //Room action///
+        function addRoom(elementselect) {
+            // try {
+
+            var element = $(elementselect);
+            var floorRow = element.data('addroomname');
+
+            var countselectedRoomsInFloor = checkMultiRoomsInFloor(floorRow);
+
+            // var countselectedchekbox = checkMultiFloors();
+            if (countselectedRoomsInFloor > 0) {
+
+                ShowMsgError("Please no select any room");
+                return false;
+            }
+
+            $("#hfFloorIdforRoom").val(floorRow);
+            $("#chkRepateRoom").prop('checked', false);
+            $("#AddRoomInFloor").modal('show');
+            // $('.js-roomcheck').each(function () {
+
+            //     if ($(this).data('flooridroom').replace('fr_', '') == floorRow) {
+            //         var RoomNameselected = $(this).siblings('label').find('h5').text();
+            //         $('#txtEditRoomName').val(RoomNameselected);
+            //         $('#hfRoomId').val($(this).data('id'));
+
+            //         $('#EditRoomName').modal('show');
+            //         return false;
+            //     }
+            // });
+            // }
+            // catch () {
+            // }
+        }
+        function saveaddRoom() {
+            //try {
+            var repeatRoom = 0;
+
+            var floorRow = $('#hfFloorIdforRoom').val();
+            var newRoomName = $('#txtNewRoomName').val();
+
+            if (!newRoomName) {
+                ShowMsgError("please enter new room name");
+                return false;
+            }
+
+            if ($('#chkRepateRoom').is(':checked') == true) {
+                repeatRoom = 1;
+            }
+            // alert(floorRow);
+            // alert(repeatRoom);
+            if (repeatRoom == 1) { // repeate add room all floors
+
+                $('.js-floorRow').each(function () {
+                    var floorId = $(this).data('flooridrepeater');
+                    var roomNumber = floorId + newRoomName.substring(1); // Change the first character to the floor number
+                    var maxid = getMaxRoomid();
+                    var elementinsert = `
+                                        <div class="js-colorType card-room" title="">
+                                            <input class="js-roomcheck" id="${maxid}" type="checkbox" name="" data-catid="" data-id="${maxid}"
+                                                   data-number="${roomNumber}" data-flooridroom="fr_${floorId}">
+                                            <label for="${maxid}">
+                                                <div class="icon">
+                                                    <div class="fa-solid fa-bed"> </div>
+                                                </div>
+                                                <h5 class="text">${roomNumber}</h5>
+                                            </label>
+                                        </div>`;
+
+                    $(this).append(elementinsert);
+                });
+                $("#AddRoomInFloor").modal('hide');
+            }
+            else { // add one room only
+
+                var roomNumber = newRoomName;
+                var maxid = getMaxRoomid();
+
+                var elementinsert = `<div class="js-colorType card-room " title="">
+                                                    <input class="js-roomcheck" id="${maxid}" type="checkbox" name="" data-catid="" data-id="${maxid}"
+                                                                            data-number="${roomNumber}" data-flooridroom="fr_${floorRow}">
+                                                                <label for="${maxid}">
+                                                            <div class="icon">
+                                                                <div class="fa-solid fa-bed"> </div>
+                                                            </div>
+                                                                    <h5 class="text">${roomNumber}</h5>
+                                                        </label>
+                                                    </div>`;
+                var selector = '.js-floorRow[data-flooridrepeater="' + floorRow + '"]';
+                // selector.last().append(elementinsert);
+                $(selector).last().append(elementinsert);
+                $("#AddRoomInFloor").modal('hide');
+                //$('.container-floor.js-floorRow').last().append(newRoom);
+            }
+            // }
+            // catch (error) {
+            //     ShowMsgError(error.message);
+            // }
+        }
+        function getMaxRoomid() {
+            var maxid = 1;
+
+            $('.js-roomcheck').each(function () {
+
+                //if ($(this).data('flooridroom').replace('fr_', '') == floorRow) {
+                var roomid = $(this).data('id');
+                if (roomid > maxid) {
+                    maxid = roomid;
+                }
+
+                // }
+            });
+            return maxid + 1;
+        }
+        function editRoomName(elementselect) {
+
+            var element = $(elementselect);
+            var floorRow = element.data('editroomname');
+            //alert(floorRow);
+            var countselectedRoomsInFloor = checkMultiRoomsInFloor(floorRow);
+            //alert(countselectedRoomsInFloor);
+            // var countselectedchekbox = checkMultiFloors();
+            if (countselectedRoomsInFloor > 1 || countselectedRoomsInFloor < 1) {
+                //alert("error");
+                ShowMsgError("Please select only one room");
+                return false;
+            }
+
+            $('.js-roomcheck').each(function () {
+                //alert("ok1");
+                if ($(this).data('flooridroom').replace('fr_', '') == floorRow && $(this).prop('checked')) {
+                    var RoomNameselected = $(this).siblings('label').find('h5').text();
+                    $('#txtEditRoomName').val(RoomNameselected);
+                    $('#hfRoomId').val($(this).data('id'));
+                    //alert("ok2");
+                    $('#EditRoomName').modal('show');
+                    return false;
+                }
+            });
+
+        }
+        function saveRoomName() {
+
+            var newRoomName = $('#txtEditRoomName').val();
+            var hfRoomId = $('#hfRoomId').val();//$(this).data('id')
+
+            $('.js-roomcheck').each(function () {
+                //console.log($(this).data('flooridroom'));
+                //if ($(this).data('flooridroom').replace('fr_', '') == floorid && $(this).prop('checked')) {
+                if ($(this).data('id') == hfRoomId && $(this).prop('checked')) {
+                    $(this).attr('data-number', newRoomName);
+                    $(this).siblings('label').find('h5').text(newRoomName);
+                    $(this).prop('checked', false);
+                    return false;
+                }
+
+            });
+            $('#EditRoomName').modal('hide');
+        }
+        function removeRoom(elementselect) {
+            var element = $(elementselect);
+            var floorRow = element.data('removeroomname');
+            // alert(floorRow);
+            var multiselect = checkMultiFloors();
+            if (multiselect > 1) {
+                //alert("error");
+                ShowMsgError("Please select only one room");
+                return false;
+            }
+
+            var countselectedRoomsInFloor = checkMultiRoomsInFloor(floorRow);
+            //alert(countselectedRoomsInFloor);
+            if (countselectedRoomsInFloor > 1 || countselectedRoomsInFloor < 1) {
+                //alert("error");
+                ShowMsgError("Please select only one room");
+                return false;
+            }
+
+            $('.js-roomcheck').each(function () {
+                //alert("ok1");
+                if ($(this).data('flooridroom').replace('fr_', '') == floorRow && $(this).prop('checked')) {
+                    var RoomNameselected = $(this).siblings('label').find('h5').text();
+
+                    var roomToRemove = $(this).closest('.js-colorType'); // The element to remove
+
+                    Swal.fire({
+                        title: `Are you sure remove Room: ${RoomNameselected}?`,
+                        //html: '<input id="swal-input" class="swal2-input" placeholder="Enter your notes here">',
+                        icon: "warning",
+                        showCancelButton: true,
+                        confirmButtonColor: "#3085d6",
+                        cancelButtonColor: "#d33",
+                        confirmButtonText: "Yes"
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            roomToRemove.remove();
+
+                        }
+                    });
+
+                    return false;
+                }
+            });
+        }
+        //end room action///
+
+
+        
+        function collectDataToSave() {
+
+            // Array to hold all floors and rooms data
+            var floorsData = [];
+
+            // Iterate over each floor
+            $('.floor').each(function () {
+                var floorElement = $(this);
+                var floorId = floorElement.find('.js-floorlabel').data('flooridlabel').replace('fl_', '');
+                var floorLabel = floorElement.find('.js-floorlabel').text();
+
+                // Array to hold all rooms in the current floor
+                var roomsData = [];
+
+                // Iterate over each room in the current floor
+                floorElement.find('.js-colorType').each(function () {
+                    var roomElement = $(this);
+                    var roomId = roomElement.find('.js-roomcheck').data('id');
+                    var roomNumber = roomElement.find('.js-roomcheck').data('number');
+                    var roomCatId = roomElement.find('.js-roomcheck').data('catid');
+                    //var roomName = roomElement.find('.js-roomcheck').data('catid');
+
+                    // Push room data to rooms array
+                    roomsData.push({
+                        RoomId: roomId,
+                        RoomNumber: roomNumber,
+                        CatId: roomCatId,
+                        FloorId: floorId
+                    });
+                });
+
+                // Push floor data with rooms to floors array
+                floorsData.push({
+                    FloorId: floorId,
+                    FloorLabel: floorLabel,
+                    Rooms: roomsData
+                });
+            });
+
+            // Send collected data to the backend
+            $.ajax({
+                url: '/Unit/SaveData', // Update with your actual backend endpoint
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(floorsData),
+                success: function (response) {
+                    // Handle success
+                    if (response.success == true) {
+                        //console.log(response);
+                        ShowMsgSuccess(response.message);
+                    }
+                    else {
+                        ShowMsgError(response.message);
+                    }
+
+                },
+                error: function (error) {
+                    // Handle error
+                    console.log(error);
+                    ShowMsgError('Error saving data.');
+                }
+            });
+
+        }
+        // end save all page to database //
+
+        //General function//
+        function checkMultiFloors() {
+            var countSelected = 0;
+
+            $('.js-roomcheck').each(function () {
+
+                if ($(this).prop('checked')) {
+                    countSelected += 1;
+                }
+            });
+            return countSelected
+        }
+        function checkMultiRoomsInFloor(floorid) {
+            var countSelected = 0;
+
+            if (!floorid) {
+                return 2
+            }
+            $('.js-roomcheck').each(function () {
+                //console.log($(this).data('flooridroom'));
+                if ($(this).data('flooridroom').replace('fr_', '') == floorid && $(this).prop('checked')) {
+                    countSelected += 1;
+                }
+            });
+            return countSelected
+        }
+        //end General function
+
+
+        // save all page to database //
+
+        function saveroomdata() {
+
+            const floorData = collectFloorData();
+    
+            //check if any data before
+            // تحقق من وجود بيانات قبل الإرسال
+
+            if (floorData.length === 0) {
+                console.log("No data to send.");
+                return;
+            }
+            //console.log(floorData); // طباعة البيانات للتأكد من هيكلها
+           // console.log(JSON.stringify(floorData)); // طباعة البيانات للتأكد من هيكلها
+
+            $.ajax({
+                url: '@Url.Action("AddUnitRooms", "Unit")',
+                type: "POST",
+                //contentType: 'application/json',
+                contentType: 'application/x-www-form-urlencoded', // استخدام تنسيق form data
+                dataType: "json",
+                data: { floors: JSON.stringify(floorData) }, // تحويل البيانات إلى string
+               // data: JSON.stringify(floorData), // تأكد من تحويل البيانات إلى JSON
+                //data: floorData,//JSON.stringify(floorData), // تأكد من تحويل البيانات إلى JSON
+                cache: false,
+                success: function (result) {
+                    if (result.success) {
+                        ShowMsgSuccess(result.message);
+                    } 
+                    else 
+                    {
+                        if (result.returnData ===  true) {
+                            ShowMsgWarning(result.message);
+                        }
+                        else
+                        {
+                            ShowMsgError(result.message);
+                        }
+                    }
+                },
+                error: function (err) {
+                    return false;
+                }
+            });
+
+        }
+        function collectFloorData() {
+            const dataToSend = [];
+
+            // Loop over each floor div
+            $('.floor').each(function () {
+                const floorElement = $(this);
+                const floorId = floorElement.find('a[data-flooridlink]').data('flooridlink');
+                const floorLabel = floorElement.find('.js-floorlabel').text();
+                const rooms = [];
+
+                // Loop over each room in the floor
+                floorElement.find('.js-roomcheck').each(function () {
+                    const roomElement = $(this);
+                    const roomData = {
+                        roomId: roomElement.data('id'),
+                        catId: roomElement.data('catid'),
+                        roomNumber: roomElement.data('number'),
+                        floorId: roomElement.data('flooridroom')
+                    };
+                    rooms.push(roomData);
+                });
+
+                dataToSend.push({
+                    floorId: floorId,
+                    floorLabel: floorLabel,
+                    rooms: rooms
+                });
+            });
+
+            return dataToSend;
+        }
+
+    </script>
+}

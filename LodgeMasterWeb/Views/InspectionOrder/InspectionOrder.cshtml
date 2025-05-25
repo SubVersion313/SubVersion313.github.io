@@ -1,0 +1,228 @@
+﻿@using Newtonsoft.Json;
+@inject IHttpContextAccessor HttpContextAccessor
+@{
+    Layout = "_Layout_main";
+}
+@{
+    var permissions = new List<KeyValuePair<string, string>>();
+
+    // استرجاع الصلاحيات من الجلسة إذا كانت موجودة
+    var permissionsJson = HttpContextAccessor.HttpContext.Session.GetString("UserPermissions");
+
+    if (!string.IsNullOrEmpty(permissionsJson))
+    {
+        permissions = JsonConvert.DeserializeObject<List<KeyValuePair<string, string>>>(permissionsJson);
+    }
+
+    // التحقق من وجود صلاحيات معينة
+    bool canRole = permissions.Any(c => c.Key == "Permission" && c.Value == "Permissions.Role.View");
+    bool canEdit = permissions.Any(c => c.Key == "Permission" && c.Value == "Permissions.StaffManagement.Edit");
+    bool canDelete = permissions.Any(c => c.Key == "Permission" && c.Value == "Permissions.StaffManagement.Delete");
+}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-lg-12 pt-3">
+            <header class="header-filter">
+                <div class="group-filter d-flex">
+                    @* <div class="input-group me-3">
+                    <input class="form-control" type="search" placeholder="Search" aria-label="Recipient's username" aria-describedby="button-addon2">
+                    <button class="btn btn-outline-master" id="button-addon2" type="button"> <i class="fa-solid fa-magnifying-glass"></i></button>
+                    </div>
+                    <button class="btn btn-outline-master d-flex align-items-center" type="button" data-bs-toggle="modal" data-bs-target="#exampleModal"> <i class="fa-solid fa-arrow-down-wide-short me-2"></i>Filter</button>
+                    *@
+                </div>
+                <div class="date">
+                    @ViewBag.DisplayCurrntDate
+                </div>
+@*                 <a class="btn btn-master d-flex align-items-center rounded-pill btn-Create-Order" asp-controller="CreateOrders" asp-action="Index">
+                    <i class="fa-solid fa-plus me-2"></i>Create Order
+                </a> *@
+                <div class="dropdown">
+                    <button class="btn btn-primary dropdown-toggle rounded-pill btn-master" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="fa-solid fa-plus me-2"></i> Create
+                    </button>
+                    <ul class="dropdown-menu bg-primary text-white">
+                        @if (permissions != null && permissions.Any(c => c.Key == "Permission" && c.Value == "Permissions.CreateOrders.Create"))
+                        {
+                            <li><a class="dropdown-item text-white" asp-controller="CreateOrders" asp-action="Index"><i class="fa-solid fa-plus me-2"></i> Order</a></li>
+                        }
+                        @if (permissions != null && permissions.Any(c => c.Key == "Permission" && c.Value == "Permissions.InspectionOrder.Create"))
+                        {
+                            <li><a class="dropdown-item text-white" asp-controller="InspectionOrder" asp-action="InspectionOrder"><i class="fa-solid fa-plus me-2"></i> Room inspiction</a></li>
+                        }
+                    </ul>
+                </div>
+            </header>
+        </div>
+    </div>
+</div>
+<div id="pageMasterLoad">
+    <div class="Create-Order">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-lg-12">
+                    <div class="Create-Order">
+                        <div class="container-fluid">
+                            <!-- Add a spinner container to your layout -->
+                            <div id="spinner-container" class="spinner-container">
+                                <div id="spinner" class="spinner"></div>
+                            </div>
+                            <div class="row">
+                                <div class="col-lg-12">
+                                    <div class="button-room card-master setup-Room-page">
+                                        <div class="container-fluid">
+                                            <div class="row">
+                                                <div class="col-lg-12 col-md-12 col-sm-12">
+                                                    <div class="room-information mb-5">
+                                                        <div class="row">
+                                                            <div class="form-group mb-2 col-lg-4">
+                                                                <label class="mb-1 d-block">Inspection Name</label>
+                                                                <select class="form-select" id="ddlInspectionName" aria-label="Default select example">
+                                                                </select>
+
+                                                            </div>
+                                                            <div class="form-group mb-2 col-lg-4">
+                                                                <label class="mb-1 ">&nbsp;</label>
+                                                                <input type="text" id="autoLocation" class="form-control" placeholder="search location" />
+                                                                <input type="hidden" id="autoLocationID" />
+
+                                                            </div>
+
+                                                            <div class="form-group mb-2 col-lg-4">
+                                                                <label class="mb-1   d-block">&nbsp;</label>
+                                                                <button type="button" class="btn btn-master w-50" onclick="StartInspection()" id="btnStartInspection">Start Inspection</button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+           
+            FillInspName();
+           
+            $("#autoLocation").autocomplete({
+                source: function (request, response) {
+                    $.ajax({
+                        url: "/InspectionOrder/AutocompleteLocation",
+                        data: { "prefix": request.term, "Inspectionid": "0" },
+                        type: "POST",
+                        success: function (data) {
+                            response($.map(data, function (item) {
+                                return item;
+                            }))
+                        },
+                        error: function (response) {
+                            alert(response.responseText)
+                        },
+                        failure: function (response) {
+                            alert(response.responseText)
+                        }
+                    });
+                },
+                select: function (e, i) {
+                    $("#autoLocationID").val(i.item.val);
+                    $("#hdLocationId").val(i.item.val);
+
+                },
+                minLength: 1
+            }).autocomplete("widget").css("max-height", "200px").css("overflow-y", "auto");
+
+        });
+
+        function FillInspName() {
+
+            var ddlobject = $("#ddlInspectionName");
+
+            $.ajax({
+                url: '@Url.Action("GetInspectionName", "InspectionOrder")',
+                type: "GET",
+                dataType: "json",
+                cache: false,
+                success: function (result) {
+                    if (result.success) {
+                        ddlobject.empty();
+                        ddlobject.append($("<option></option>")
+                            .attr("value", "0")
+                            .text("Select Inspection"));
+                        result.returnData.forEach(function (item) {
+                            ddlobject.append($("<option></option>")
+                                .attr("value", item.value)
+                                .text(item.text));
+                        });
+
+                    } else {
+                        alert(result.message);
+                    }
+                },
+                error: function (err) {
+                    return false;
+                }
+            });
+        }
+
+        function StartInspection() {
+
+            var inspectionid = $("#ddlInspectionName").val();
+            var locationid = $("#autoLocationID").val();
+            var locationName = $("#autoLocation").val();
+
+
+            if (inspectionid == null || inspectionid == "" || inspectionid == undefined) {
+                alert("select inspection name");
+                return false;
+            }
+
+            if (locationid == null || locationid == "" || locationid == undefined) {
+                alert("select location name");
+                return false;
+            }
+
+            showSpinner();
+
+            $.ajax({
+                url: "/InspectionOrder/StartInspectionSession",
+                data: { "inspectionid": inspectionid, "locationid": locationid, "locationname": locationName },
+                type: "POST",
+                beforeSend: function () {
+                    //$('#spinner').show(); // Show spinner before AJAX call
+                },
+                success: function (data) {
+                    if (data.result == true) {
+                        // Spinner will remain visible until redirection
+                        setTimeout(function () {
+                            window.location.href = '/InspectionOrder/StartQuestion/';
+                        }, 1000); // Adjust the delay time as needed
+                    }
+                    else {
+                        hideSpinner();
+                    }
+                },
+                error: function (err) {
+                    return false;
+                    //hideSpinner();
+                },
+                complete: function () {
+                    // $('#spinner').hide(); // Hide spinner after AJAX call is complete
+                    //hideSpinner();
+                }
+            });
+
+
+        }
+    </script>
+}

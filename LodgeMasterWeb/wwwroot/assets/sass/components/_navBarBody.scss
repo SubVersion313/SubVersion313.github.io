@@ -1,0 +1,48 @@
+/* Start nav-bar-body  */
+.nav-bar-body {
+  background-color: $mColor;
+  color: #fff;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 20px;
+  position: relative;
+  z-index: 9;
+  transform: scaleY(0);
+  transform-origin: top center;
+  transition: all 0.4s ease-in-out;
+  position: absolute;
+  .logo {
+  }
+  .icon-toggle {
+    padding: 10px;
+    cursor: pointer;
+    svg {
+      width: 20px;
+      height: 20px;
+      stroke: #fff;
+      path,
+      g {
+        stroke: #fff;
+      }
+    }
+  }
+  @media (max-width: 1199.98px) {
+    transform: scaleY(1);
+    position: fixed;
+    top: 0;
+    width: 100%;
+    .show-aside {
+      display: none;
+    }
+  }
+  @media (max-width: 575.98px) {
+    .show-aside {
+      display: block;
+    }
+    .expand-aside {
+      display: none;
+    }
+  }
+}
+/* End nav-bar-body  */

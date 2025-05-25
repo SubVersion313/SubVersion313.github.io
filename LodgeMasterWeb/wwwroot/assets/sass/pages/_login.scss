@@ -1,0 +1,77 @@
+/* Start Login Page */
+.login-page {
+  background: url(../images/bg-logIn.png) no-repeat center bottom;
+  background-size: cover;
+  height: 100vh;
+  position: relative;
+  .container-up {
+    position: relative;
+    z-index: 2;
+  }
+  @media (max-width: 575.98px) {
+      .d-sm-none {
+        display: none;
+      }
+    }
+  .image-main-logo {
+    margin: 50px 100px;
+     
+  }
+}
+@media (max-width: 991.98px) {
+  .login-page {
+      background: url(../images/bg-login2.png) no-repeat center bottom;
+      &::before {
+        content: '';
+        background-color: rgba(#fff,0.8);
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        top: 0;
+        left: 0;
+        z-index: 1;
+      }
+  
+    }
+} 
+@media (max-width: 767.98px) {
+  .login-page {
+      background: url(../images/bg-login2.png) no-repeat center bottom;
+  
+      
+    }
+}
+@media (max-width: 575.98px) {
+  .login-page {
+    background: url(../images/bg-login2.png) no-repeat center bottom;
+    .image-main-logo {
+      margin: 50px 0;
+    }
+  }
+}
+@media (max-width: 575.98px) {
+  .login-page {
+    .image-main-logo {
+      margin: 20px auto !important;
+      max-width: 70vw;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .image-main-logo img {
+      max-width: 100%;
+      height: auto;
+      display: block;
+    }
+    h1, p {
+      font-size: 1.2rem;
+      text-align: center;
+    }
+  }
+}
+.image-main-logo {
+  max-width: 400px;
+  margin-left: auto;
+  margin-right: auto;
+}
+/* End Login Page */

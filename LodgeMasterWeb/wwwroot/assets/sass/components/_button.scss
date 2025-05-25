@@ -1,0 +1,87 @@
+.btn-outline-master {
+  // background-color: #fff;
+  border: 1px solid $mColor;
+  color: $mColor;
+  transition: all 0.4s ease-in-out;
+}
+.btn-outline-master:hover,
+.btn-outline-master.active {
+  background-color: $mColor;
+  color: #fff;
+  // box-shadow: 1px 3px 5px rgba(#000, 0.2);
+}
+.btn-master {
+  background-color: $mColor;
+  color: #fff;
+}
+.btn-master:hover {
+  background-color: #077ee1;
+  box-shadow: 1px 3px 5px rgba(#000, 0.2);
+  color: #fff;
+}
+
+.bg-outline-open {
+  background-color: #fff;
+  border: 1px solid #ffaa6a;
+  color: #ffaa6a;
+  transition: all 0.4s ease-in-out;
+  cursor: pointer;
+}
+.bg-outline-open:hover,
+.bg-outline-open.active {
+  background-color: #ffaa6a;
+  border: 1px solid #fff;
+  color: #fff;
+}
+.bg-outline-process {
+  background-color: #fff;
+  border: 1px solid #26bd26;
+  color: #26bd26;
+  transition: all 0.4s ease-in-out;
+  cursor: pointer;
+}
+.bg-outline-process:hover,
+.bg-outline-process.active {
+  background-color: #26bd26;
+  border: 1px solid #fff;
+  color: #fff;
+}
+.bg-outline-Completed {
+  background-color: #fff;
+  border: 1px solid #23546f;
+  color: #23546f;
+  transition: all 0.4s ease-in-out;
+  cursor: pointer;
+}
+.bg-outline-Completed:hover,
+.bg-outline-Completed.active {
+  background-color: #23546f;
+  border: 1px solid #fff;
+  color: #fff;
+}
+.bg-outline-Hold {
+  background-color: #fff;
+  border: 1px solid #ed705b;
+  color: #ed705b;
+  transition: all 0.4s ease-in-out;
+  cursor: pointer;
+}
+.bg-outline-Hold:hover,
+.bg-outline-Hold.active {
+  background-color: #ed705b;
+  border: 1px solid #fff;
+  color: #fff;
+}
+.bg-outline-Closed {
+  background-color: #fff;
+  border: 1px solid #5b814e;
+  color: #5b814e;
+  transition: all 0.4s ease-in-out;
+  cursor: pointer;
+}
+.bg-outline-Closed:hover,
+.bg-outline-Closed.active {
+  background-color: #5b814e;
+  border: 1px solid #fff;
+  color: #fff;
+}

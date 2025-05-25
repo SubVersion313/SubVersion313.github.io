@@ -1,0 +1,1429 @@
+﻿@using Newtonsoft.Json;
+@inject IHttpContextAccessor HttpContextAccessor
+@{
+    Layout = "_Layout_main";
+}
+@{
+    var permissions = new List<KeyValuePair<string, string>>();
+
+    // استرجاع الصلاحيات من الجلسة إذا كانت موجودة
+    var permissionsJson = HttpContextAccessor.HttpContext.Session.GetString("UserPermissions");
+
+    if (!string.IsNullOrEmpty(permissionsJson))
+    {
+        permissions = JsonConvert.DeserializeObject<List<KeyValuePair<string, string>>>(permissionsJson);
+    }
+
+    // التحقق من وجود صلاحيات معينة
+    bool canRole = permissions.Any(c => c.Key == "Permission" && c.Value == "Permissions.Role.View");
+    bool canEdit = permissions.Any(c => c.Key == "Permission" && c.Value == "Permissions.StaffManagement.Edit");
+    bool canDelete = permissions.Any(c => c.Key == "Permission" && c.Value == "Permissions.StaffManagement.Delete");
+}
+<style>
+    #OrderStatusChart .apexcharts-graphical, #StatusOrderChart .apexcharts-graphical {
+        transform: translate(50%, 0);
+    }
+</style>
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-lg-12 pt-3">
+            <header class="header-filter">
+                <div class="group-filter d-flex">
+                    <div class="input-group me-3">
+                        <input id="txtSearch" class="form-control" type="search" placeholder="Search" aria-label="Recipient's username" aria-describedby="button-addon2">
+                        <button class="btn btn-outline-master" id="button-addon2" type="button" onclick="DashboardSearch()"> <i class="fa-solid fa-magnifying-glass"></i></button>
+                    </div>
+                    <button class="btn btn-outline-master d-flex align-items-center" type="button" data-bs-toggle="modal" data-bs-target="#exampleModal"> <i class="fa-solid fa-arrow-down-wide-short me-2"></i>Filter</button>
+                </div>
+                <div class="date">
+                    @ViewBag.DisplayCurrntDate
+                </div>
+                @*<a class="btn btn-master d-flex align-items-center rounded-pill btn-Create-Order" asp-controller="CreateOrders" asp-action="Index">
+                <i class="fa-solid fa-plus me-2"></i>Create Order
+                </a> *@
+                <div class="dropdown">
+                    <button class="btn btn-primary dropdown-toggle rounded-pill btn-master" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="fa-solid fa-plus me-2"></i> Create
+                    </button>
+                    <ul class="dropdown-menu bg-primary text-white">
+                        @if (permissions != null && permissions.Any(c => c.Key == "Permission" && c.Value == "Permissions.CreateOrders.Create"))
+                        {
+                            <li><a class="dropdown-item text-white" asp-controller="CreateOrders" asp-action="Index"><i class="fa-solid fa-plus me-2"></i> Order</a></li>
+                        }
+                        @if (permissions != null && permissions.Any(c => c.Key == "Permission" && c.Value == "Permissions.InspectionOrder.Create"))
+                        {
+                            <li><a class="dropdown-item text-white" asp-controller="InspectionOrder" asp-action="InspectionOrder"><i class="fa-solid fa-plus me-2"></i> Room inspiction</a></li>
+                        }
+                    </ul>
+                </div>
+            </header>
+        </div>
+    </div>
+</div>
+
+
+
+<div class="pt-3" id="pageMasterLoad">
+    <div class="container-fluid">
+        <ul class="nav nav-tabs ms-4" id="myTab" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="home-tab" data-bs-toggle="tab" data-bs-target="#home-tab-pane" type="button" role="tab" aria-controls="home-tab-pane" aria-selected="true">Dashboard</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="profile-tab" data-bs-toggle="tab" data-bs-target="#profile-tab-pane" type="button" role="tab" aria-controls="profile-tab-pane" aria-selected="false">Pending Orders</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="contact-tab" data-bs-toggle="tab" data-bs-target="#contact-tab-pane" type="button" role="tab" aria-controls="contact-tab-pane" aria-selected="false">Guest Orders <span class="ms-2 p-2 badge text-bg-danger">9</span></button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="disabled-tab" data-bs-toggle="tab" data-bs-target="#disabled-tab-pane" type="button" role="tab" aria-controls="disabled-tab-pane" aria-selected="false">All Orders</button>
+            </li>
+        </ul>
+        <div class="tab-content overview-Orders" id="myTabContent">
+            @* Tab Dashboard *@
+            <input id="startDate" class="form-control rounded-pill" type="hidden">
+            <input id="endDate" class="form-control rounded-pill" type="hidden">
+            <div class="tab-pane fade show active" id="home-tab-pane" role="tabpanel" aria-labelledby="home-tab" tabindex="0">
+                <div class="row">
+                    <div class="col-lg-4 mb-3">
+                        <select class="form-select" id="ddlTypePeriod" onchange="periodchange()" >
+                            <option value="0" selected>One Day</option>
+                            <option value="1">7 Days</option>
+                            <option value="2">30 Days</option>
+                        </select>
+                        @* <button id="upgradeData" onclick="rebuilddata()">Upgrade</button> *@
+                    </div>
+
+                </div>
+                <div class="row">
+                    <div class="col-lg-4 mb-3">
+                        <div class="card">
+                            <div class="card-header p-3 mx-2 fw-bold"> Housekeeping </div>
+                            <div class="card-body">
+                                <div id="HousekeepingChart">        </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-4 mb-3">
+                        <div class="card">
+                            <div class="card-header p-3 mx-2 fw-bold">Maintenance  </div>
+                            <div class="card-body">
+                                <div id="MaintenanceChart">        </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-4 mb-3">
+                        <div class="card">
+                            <div class="card-header p-3 mx-2 fw-bold">Completed </div>
+                            <div class="card-body">
+                                <div id="CompleteChart">        </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-6 mb-3">
+                        <div class="card">
+                            <div class="card-header p-3 mx-2 fw-bold"> Housekeeping </div>
+                            <div class="card-body p-0">
+                                <div id="HousekeepingOrderStatusChart">        </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-6 mb-3">
+                        <div class="card">
+                            <div class="card-header p-3 mx-2 fw-bold"> Inspected rooms </div>
+                            <div class="card-body js-inspection">
+                                @*<label class="mb-1" for="">   Pending inspection    </label>
+                                <div class="progress mb-3" role="progressbar" aria-label="Example with label" aria-valuenow="25" aria-valuemin="0" aria-valuemax="100" style="--bs-progress-height: 1rem;--bs-progress-border-radius: 50px;">
+<<<<<<< HEAD
+                                    <div class="progress-bar bg-danger" style="width: 28%">28</div>
+                                </div>
+                                <label class="mb-1" for="">       Today’s inspected rooms</label>
+                                <div class="progress" role="progressbar" aria-label="Danger example" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100" style="--bs-progress-height: 1rem;--bs-progress-border-radius: 50px;">
+                                <div class="progress-bar bg-success" style="width: 53%">53</div>
+                                </div>
+
+                                <div id="Pendinginspection" class="progress-bar bg-danger" style="width: 0%">0</div>
+                                </div>
+                                <label class="mb-1" for="">       Today’s inspected rooms</label>
+                                <div class="progress" role="progressbar" aria-label="Danger example" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100" style="--bs-progress-height: 1rem;--bs-progress-border-radius: 50px;">
+                                <div id="Completeinspection" class="progress-bar bg-success" style="width: 0%">0</div>
+                                </div> *@
+
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-6 mb-3">
+                        <div class="card">
+                            <div class="card-header p-3 mx-2 fw-bold">Maintenance</div>
+                            <div class="card-body js-maintenance">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-6 mb-3">
+                        <div class="card">
+                            <div class="card-header p-3 mx-2 fw-bold">Order Status </div>
+                            <div class="card-body p-0">
+                                <div id="MaintenanceStatusOrderChart"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            @* Tab Pending orders*@
+            <div class="tab-pane fade" id="profile-tab-pane" role="tabpanel" aria-labelledby="profile-tab" tabindex="0">
+                <table class="table table-hover table-responsive">
+                    <thead>
+                        <tr>
+                            @*  <th scope="col"></th> *@
+                            <th scope="col">Status</th>
+                            <th scope="col">Age/order</th>
+                            <th scope="col">Type</th>
+                            <th scope="col">Issue</th>
+                            <th scope="col">Priority</th>
+                            <th scope="col">Guest</th>
+                            <th scope="col">Location</th>
+                            <th scope="col">Requestor</th>
+                            <th scope="col">Assigned</th>
+                            <th scope="col">Team</th>
+                            <th scope="col">Follow Up</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="align-middle">
+                            <td data-label="">
+                            <input class="form-check-input" type="checkbox" value="" id="flexCheckDefault">
+                            </td>
+                            <td data-label="Status">
+                                <div class="dropdown">
+                                    <a class="link-success dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                        <i class="fa-regular fa-circle-play fa-2x"></i>
+                                    </a>
+                                    <ul class="dropdown-menu">
+                                        <li><a class="dropdown-item" href="#">Action</a></li>
+                                        <li><a class="dropdown-item" href="#">Another action</a></li>
+                                        <li><a class="dropdown-item" href="#">Something else here</a></li>
+                                    </ul>
+                                </div>
+                            </td>
+                            <td data-label="Age/order">
+                                138
+                                <div class="time"><i class="fa-regular fa-clock text-info me-1"></i> 8h 45m</div>
+                            </td>
+                            <td data-label="Type"><a href="" class="link-danger"><i class="fa-solid fa-fire fa-2x"></i></a></td>
+                            <td data-label="Issue">
+                                Towels - Requested
+                                <div class="acton">
+                                    <a href="" class="link-secondary"><i class="fa-solid fa-calendar-days"></i></a>
+                                    <a href="" class="link-secondary"><i class="fa-solid fa-money-check-dollar"></i></a>
+                                    <a href="" class="link-secondary"><i class="fa-solid fa-barcode"></i></a>
+                                    <a href="" class="link-secondary"><i class="fa-solid fa-paperclip"></i></a>
+                                </div>
+                            </td>
+                            <td data-label="Priority">
+                                <a class="py-1 px-2 bg-danger text-white rounded-circle">1</a>
+                            </td>
+                            <td data-label="Guest">Karen Wilder</td>
+                            <td data-label="Location"> Guest room 101</td>
+                            <td data-label="Requestor"> Annesia Pyfro</td>
+                            <td data-label="Assigned"> Cliff Baldwin a</td>
+                            <td data-label="Team"> HouseKeeping</td>
+                            <td data-label="Follow Up"> <a href="" class="btn btn-danger">New <i class="fa-solid fa-arrow-up fa-rotate-by ms-1" style="--fa-rotate-angle: 45deg;"></i></a></td>
+                        </tr>
+                        <tr class="align-middle">
+                            <td data-label="">
+                                <input class="form-check-input" type="checkbox" value="" id="flexCheckDefault">
+                            </td>
+                            <td data-label="Status">
+                                <div class="dropdown">
+                                    <a class="link-danger dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                        <i class="fa-solid fa-circle-exclamation fa-2x"></i>
+                                    </a>
+                                    <ul class="dropdown-menu">
+                                        <li><a class="dropdown-item" href="#">Action</a></li>
+                                        <li><a class="dropdown-item" href="#">Another action</a></li>
+                                        <li><a class="dropdown-item" href="#">Something else here</a></li>
+                                    </ul>
+                                </div>
+                            </td>
+                            <td data-label="Age/order">
+                                138
+                                <div class="time"><i class="fa-regular fa-clock text-info me-1"></i> 8h 45m</div>
+                            </td>
+                            <td data-label="Type"><a href="" class="link-danger"><i class="fa-solid fa-fire fa-2x"></i></a></td>
+                            <td data-label="Issue">
+                                Towels - Requested
+                                <div class="acton">
+                                    <a href="" class="link-secondary"><i class="fa-solid fa-calendar-days"></i></a>
+                                    <a href="" class="link-secondary"><i class="fa-solid fa-money-check-dollar"></i></a>
+                                    <a href="" class="link-secondary"><i class="fa-solid fa-barcode"></i></a>
+                                    <a href="" class="link-secondary"><i class="fa-solid fa-paperclip"></i></a>
+                                </div>
+                            </td>
+                            <td data-label="Priority">
+                                <a class="py-1 px-2 bg-success text-white rounded-circle">3</a>
+                            </td>
+                            <td data-label="Guest">Karen Wilder</td>
+                            <td data-label="Location"> Guest room 101</td>
+                            <td data-label="Requestor"> Annesia Pyfro</td>
+                            <td data-label="Assigned"> Cliff Baldwin a</td>
+                            <td data-label="Team"> Engineering</td>
+                            <td data-label="Follow Up"> <a href="" class="btn btn-danger">New <i class="fa-solid fa-arrow-up fa-rotate-by ms-1" style="--fa-rotate-angle: 45deg;"></i></a></td>
+                        </tr>
+                        <tr class="align-middle">
+                            <td data-label="">
+                                <input class="form-check-input" type="checkbox" value="" id="flexCheckDefault">
+                            </td>
+                            <td data-label="Status">
+                                <div class="dropdown">
+                                    <a class="link-danger dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                        <i class="fa-solid fa-circle-exclamation fa-2x"></i>
+                                    </a>
+                                    <ul class="dropdown-menu">
+                                        <li><a class="dropdown-item" href="#">Action</a></li>
+                                        <li><a class="dropdown-item" href="#">Another action</a></li>
+                                        <li><a class="dropdown-item" href="#">Something else here</a></li>
+                                    </ul>
+                                </div>
+                            </td>
+                            <td data-label="Age/order">
+                                138
+                                <div class="time"><i class="fa-regular fa-clock text-info me-1"></i> 8h 45m</div>
+                            </td>
+                            <td data-label="Type"><a href="" class="link-secondary"><i class="fa-solid fa-newspaper fa-2x"></i></a></td>
+                            <td data-label="Issue">
+                                Towels - Requested
+                                <div class="acton">
+                                    <a href="" class="link-secondary"><i class="fa-solid fa-calendar-days"></i></a>
+                                    <a href="" class="link-secondary"><i class="fa-solid fa-money-check-dollar"></i></a>
+                                    <a href="" class="link-secondary"><i class="fa-solid fa-barcode"></i></a>
+                                    <a href="" class="link-secondary"><i class="fa-solid fa-paperclip"></i></a>
+                                </div>
+                            </td>
+                            <td data-label="Priority">
+                                <a class="py-1 px-2 bg-warning text-white rounded-circle">2</a>
+                            </td>
+                            <td data-label="Guest">Karen Wilder</td>
+                            <td data-label="Location"> Guest room 101</td>
+                            <td data-label="Requestor"> Annesia Pyfro</td>
+                            <td data-label="Assigned"> Cliff Baldwin a</td>
+                            <td data-label="Team"> Other</td>
+                            <td data-label="Follow Up"> <a href="" class="btn btn-danger">New <i class="fa-solid fa-arrow-up fa-rotate-by ms-1" style="--fa-rotate-angle: 45deg;"></i></a></td>
+                        </tr>
+                        <tr class="align-middle">
+                            <td data-label="">
+                                <input class="form-check-input" type="checkbox" value="" id="flexCheckDefault">
+                            </td>
+                            <td data-label="Status">
+                                <div class="dropdown">
+                                    <a class="link-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                        <i class="fa-regular fa-bell fa-2x"></i></i>
+                                    </a>
+                                    <ul class="dropdown-menu">
+                                        <li><a class="dropdown-item" href="#">Action</a></li>
+                                        <li><a class="dropdown-item" href="#">Another action</a></li>
+                                        <li><a class="dropdown-item" href="#">Something else here</a></li>
+                                    </ul>
+                                </div>
+                            </td>
+                            <td data-label="Age/order">
+                                138
+                                <div class="time"><i class="fa-regular fa-clock text-info me-1"></i> 8h 45m</div>
+                            </td>
+                            <td data-label="Type"><a href="" class="link-secondary"><i class="fa-solid fa-truck-ramp-box fa-2x"></i></a></td>
+                            <td data-label="Issue">
+                                Towels - Requested
+                                <div class="acton">
+                                    <a href="" class="link-secondary"><i class="fa-solid fa-calendar-days"></i></a>
+                                    <a href="" class="link-secondary"><i class="fa-solid fa-money-check-dollar"></i></a>
+                                    <a href="" class="link-secondary"><i class="fa-solid fa-barcode"></i></a>
+                                    <a href="" class="link-secondary"><i class="fa-solid fa-paperclip"></i></a>
+                                </div>
+                            </td>
+                            <td data-label="Priority">
+                                <a class="py-1 px-2 bg-warning text-white rounded-circle">2</a>
+                            </td>
+                            <td data-label="Guest">Karen Wilder</td>
+                            <td data-label="Location"> Guest room 101</td>
+                            <td data-label="Requestor"> Annesia Pyfro</td>
+                            <td data-label="Assigned"> Cliff Baldwin a</td>
+                            <td data-label="Team"> Other</td>
+                            <td data-label="Follow Up"> <a href="" class="btn btn-danger">New <i class="fa-solid fa-arrow-up fa-rotate-by ms-1" style="--fa-rotate-angle: 45deg;"></i></a></td>
+                        </tr>
+                        <tr class="align-middle">
+                            <td data-label="">
+                                <input class="form-check-input" type="checkbox" value="" id="flexCheckDefault">
+                            </td>
+                            <td data-label="Status">
+                                <div class="dropdown">
+                                    <a class="link-danger dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                        <i class="fa-solid fa-circle-exclamation fa-2x"></i>
+                                    </a>
+                                    <ul class="dropdown-menu">
+                                        <li><a class="dropdown-item" href="#">Action</a></li>
+                                        <li><a class="dropdown-item" href="#">Another action</a></li>
+                                        <li><a class="dropdown-item" href="#">Something else here</a></li>
+                                    </ul>
+                                </div>
+                            </td>
+                            <td data-label="Age/order">
+                                138
+                                <div class="time"><i class="fa-regular fa-clock text-info me-1"></i> 8h 45m</div>
+                            </td>
+                            <td data-label="Type"><a href="" class="link-secondary"><i class="fa-solid fa-newspaper fa-2x"></i></a></td>
+                            <td data-label="Issue">
+                                Towels - Requested
+                                <div class="acton">
+                                    <a href="" class="link-info"><i class="fa-solid fa-calendar-days"></i></a>
+                                    <a href="" class="link-secondary"><i class="fa-solid fa-money-check-dollar"></i></a>
+                                    <a href="" class="link-secondary"><i class="fa-solid fa-barcode"></i></a>
+                                    <a href="" class="link-secondary"><i class="fa-solid fa-paperclip"></i></a>
+                                </div>
+                            </td>
+                            <td data-label="Priority">
+                                <a class="py-1 px-2 bg-warning text-white rounded-circle">2</a>
+                            </td>
+                            <td data-label="Guest">Karen Wilder</td>
+                            <td data-label="Location"> Guest room 101</td>
+                            <td data-label="Requestor"> Annesia Pyfro</td>
+                            <td data-label="Assigned"> Cliff Baldwin a</td>
+                            <td data-label="Team"> Other</td>
+                            <td data-label="Follow Up"> <a href="" class="btn btn-danger">New <i class="fa-solid fa-arrow-up fa-rotate-by ms-1" style="--fa-rotate-angle: 45deg;"></i></a></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            @* Tab Guest Orders *@
+            <div class="tab-pane fade" id="contact-tab-pane" role="tabpanel" aria-labelledby="contact-tab" tabindex="0">
+
+@*                 <div class="filter-table add-item-order">
+                    <div class="row align-items-center">
+                        <div class="col d-flex align-items-center">
+                            <a class="btn-reset me-2"><i class="fa-solid fa-arrows-rotate"></i></a>
+                            <div class="input-group ">
+                                <select class="form-select " id="inputGroupSelect01" style="max-width: 200px;">
+                                    <option selected>All</option>
+                                    <option value="1">One</option>
+                                    <option value="2">Two</option>
+                                    <option value="3">Three</option>
+                                </select>
+                                <input type="search" class="form-control input-sesrch" placeholder="Search All">
+                            </div>
+
+                        </div>
+                        <div class="col-auto ">
+                            <a href="" class="px-1 "><i class="fa-solid fa-table-cells"></i></a>
+                            <a href="" class="px-1 "><i class="fa-solid fa-download"></i></a>
+                            <a href="" class="px-1 "><i class="fa-solid fa-sliders"></i></a>
+                        </div>
+                    </div>
+                </div> *@
+                <table class="table table-hover table-responsive" id="tableGuestOrder">
+                    <thead>
+                        <tr>
+                            <th scope="col"></th>
+                            <th scope="col">Status</th>
+                            <th scope="col">Age/order</th>
+                            <th scope="col">Type</th>
+                            <th scope="col">Issue</th>
+                            <th scope="col">Priority</th>
+                            <th scope="col">Guest</th>
+                            <th scope="col">Location</th>
+                            <th scope="col">Requestor</th>
+                            <th scope="col">Assigned</th>
+                            <th scope="col">Team</th>
+                            <th scope="col">Follow Up</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @*<tr class="align-middle">
+                        <td data-label="">
+                        <input class="form-check-input" type="checkbox" value="" id="flexCheckDefault">
+                        </td>
+                        <td data-label="Status">
+                        <div class="dropdown">
+                        <a class="link-success dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="fa-regular fa-circle-play fa-2x"></i>
+                        </a>
+                        <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="#">Action</a></li>
+                        <li><a class="dropdown-item" href="#">Another action</a></li>
+                        <li><a class="dropdown-item" href="#">Something else here</a></li>
+                        </ul>
+                        </div>
+                        </td>
+                        <td data-label="Age/order">
+                        138
+                        <div class="time"><i class="fa-regular fa-clock text-info me-1"></i> 8h 45m</div>
+                        </td>
+                        <td data-label="Type"><a href="" class="link-danger"><i class="fa-solid fa-fire fa-2x"></i></a></td>
+                        <td data-label="Issue">
+                        Towels - Requested
+                        <div class="acton">
+                        <a href="" class="link-secondary"><i class="fa-solid fa-calendar-days"></i></a>
+                        <a href="" class="link-secondary"><i class="fa-solid fa-money-check-dollar"></i></a>
+                        <a href="" class="link-secondary"><i class="fa-solid fa-barcode"></i></a>
+                        <a href="" class="link-secondary"><i class="fa-solid fa-paperclip"></i></a>
+                        </div>
+                        </td>
+                        <td data-label="Priority">
+                        <a class="py-1 px-2 bg-danger text-white rounded-circle">1</a>
+                        </td>
+                        <td data-label="Guest">Karen Wilder</td>
+                        <td data-label="Location"> Guest room 101</td>
+                        <td data-label="Requestor"> Annesia Pyfro</td>
+                        <td data-label="Assigned"> Cliff Baldwin a</td>
+                        <td data-label="Team"> HouseKeeping</td>
+                        <td data-label="Follow Up"> <a href="" class="btn btn-danger">New <i class="fa-solid fa-arrow-up fa-rotate-by ms-1" style="--fa-rotate-angle: 45deg;"></i></a></td>
+                        </tr>
+                        <tr class="align-middle">
+                        <td data-label="">
+                        <input class="form-check-input" type="checkbox" value="" id="flexCheckDefault">
+                        </td>
+                        <td data-label="Status">
+                        <div class="dropdown">
+                        <a class="link-danger dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="fa-solid fa-circle-exclamation fa-2x"></i>
+                        </a>
+                        <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="#">Action</a></li>
+                        <li><a class="dropdown-item" href="#">Another action</a></li>
+                        <li><a class="dropdown-item" href="#">Something else here</a></li>
+                        </ul>
+                        </div>
+                        </td>
+                        <td data-label="Age/order">
+                        138
+                        <div class="time"><i class="fa-regular fa-clock text-info me-1"></i> 8h 45m</div>
+                        </td>
+                        <td data-label="Type"><a href="" class="link-danger"><i class="fa-solid fa-fire fa-2x"></i></a></td>
+                        <td data-label="Issue">
+                        Towels - Requested
+                        <div class="acton">
+                        <a href="" class="link-secondary"><i class="fa-solid fa-calendar-days"></i></a>
+                        <a href="" class="link-secondary"><i class="fa-solid fa-money-check-dollar"></i></a>
+                        <a href="" class="link-secondary"><i class="fa-solid fa-barcode"></i></a>
+                        <a href="" class="link-secondary"><i class="fa-solid fa-paperclip"></i></a>
+                        </div>
+                        </td>
+                        <td data-label="Priority">
+                        <a class="py-1 px-2 bg-success text-white rounded-circle">3</a>
+                        </td>
+                        <td data-label="Guest">Karen Wilder</td>
+                        <td data-label="Location"> Guest room 101</td>
+                        <td data-label="Requestor"> Annesia Pyfro</td>
+                        <td data-label="Assigned"> Cliff Baldwin a</td>
+                        <td data-label="Team"> Engineering</td>
+                        <td data-label="Follow Up"> <a href="" class="btn btn-danger">New <i class="fa-solid fa-arrow-up fa-rotate-by ms-1" style="--fa-rotate-angle: 45deg;"></i></a></td>
+                        </tr>
+                        <tr class="align-middle">
+                        <td data-label="">
+                        <input class="form-check-input" type="checkbox" value="" id="flexCheckDefault">
+                        </td>
+                        <td data-label="Status">
+                        <div class="dropdown">
+                        <a class="link-danger dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="fa-solid fa-circle-exclamation fa-2x"></i>
+                        </a>
+                        <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="#">Action</a></li>
+                        <li><a class="dropdown-item" href="#">Another action</a></li>
+                        <li><a class="dropdown-item" href="#">Something else here</a></li>
+                        </ul>
+                        </div>
+                        </td>
+                        <td data-label="Age/order">
+                        138
+                        <div class="time"><i class="fa-regular fa-clock text-info me-1"></i> 8h 45m</div>
+                        </td>
+                        <td data-label="Type"><a href="" class="link-secondary"><i class="fa-solid fa-newspaper fa-2x"></i></a></td>
+                        <td data-label="Issue">
+                        Towels - Requested
+                        <div class="acton">
+                        <a href="" class="link-secondary"><i class="fa-solid fa-calendar-days"></i></a>
+                        <a href="" class="link-secondary"><i class="fa-solid fa-money-check-dollar"></i></a>
+                        <a href="" class="link-secondary"><i class="fa-solid fa-barcode"></i></a>
+                        <a href="" class="link-secondary"><i class="fa-solid fa-paperclip"></i></a>
+                        </div>
+                        </td>
+                        <td data-label="Priority">
+                        <a class="py-1 px-2 bg-warning text-white rounded-circle">2</a>
+                        </td>
+                        <td data-label="Guest">Karen Wilder</td>
+                        <td data-label="Location"> Guest room 101</td>
+                        <td data-label="Requestor"> Annesia Pyfro</td>
+                        <td data-label="Assigned"> Cliff Baldwin a</td>
+                        <td data-label="Team"> Other</td>
+                        <td data-label="Follow Up"> <a href="" class="btn btn-danger">New <i class="fa-solid fa-arrow-up fa-rotate-by ms-1" style="--fa-rotate-angle: 45deg;"></i></a></td>
+                        </tr>
+                        <tr class="align-middle">
+                        <td data-label="">
+                        <input class="form-check-input" type="checkbox" value="" id="flexCheckDefault">
+                        </td>
+                        <td data-label="Status">
+                        <div class="dropdown">
+                        <a class="link-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="fa-regular fa-bell fa-2x"></i></i>
+                        </a>
+                        <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="#">Action</a></li>
+                        <li><a class="dropdown-item" href="#">Another action</a></li>
+                        <li><a class="dropdown-item" href="#">Something else here</a></li>
+                        </ul>
+                        </div>
+                        </td>
+                        <td data-label="Age/order">
+                        138
+                        <div class="time"><i class="fa-regular fa-clock text-info me-1"></i> 8h 45m</div>
+                        </td>
+                        <td data-label="Type"><a href="" class="link-secondary"><i class="fa-solid fa-truck-ramp-box fa-2x"></i></a></td>
+                        <td data-label="Issue">
+                        Towels - Requested
+                        <div class="acton">
+                        <a href="" class="link-secondary"><i class="fa-solid fa-calendar-days"></i></a>
+                        <a href="" class="link-secondary"><i class="fa-solid fa-money-check-dollar"></i></a>
+                        <a href="" class="link-secondary"><i class="fa-solid fa-barcode"></i></a>
+                        <a href="" class="link-secondary"><i class="fa-solid fa-paperclip"></i></a>
+                        </div>
+                        </td>
+                        <td data-label="Priority">
+                        <a class="py-1 px-2 bg-warning text-white rounded-circle">2</a>
+                        </td>
+                        <td data-label="Guest">Karen Wilder</td>
+                        <td data-label="Location"> Guest room 101</td>
+                        <td data-label="Requestor"> Annesia Pyfro</td>
+                        <td data-label="Assigned"> Cliff Baldwin a</td>
+                        <td data-label="Team"> Other</td>
+                        <td data-label="Follow Up"> <a href="" class="btn btn-danger">New <i class="fa-solid fa-arrow-up fa-rotate-by ms-1" style="--fa-rotate-angle: 45deg;"></i></a></td>
+                        </tr>
+                        <tr class="align-middle">
+                        <td data-label="">
+                        <input class="form-check-input" type="checkbox" value="" id="flexCheckDefault">
+                        </td>
+                        <td data-label="Status">
+                        <div class="dropdown">
+                        <a class="link-danger dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="fa-solid fa-circle-exclamation fa-2x"></i>
+                        </a>
+                        <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="#">Action</a></li>
+                        <li><a class="dropdown-item" href="#">Another action</a></li>
+                        <li><a class="dropdown-item" href="#">Something else here</a></li>
+                        </ul>
+                        </div>
+                        </td>
+                        <td data-label="Age/order">
+                        138
+                        <div class="time"><i class="fa-regular fa-clock text-info me-1"></i> 8h 45m</div>
+                        </td>
+                        <td data-label="Type"><a href="" class="link-secondary"><i class="fa-solid fa-newspaper fa-2x"></i></a></td>
+                        <td data-label="Issue">
+                        Towels - Requested
+                        <div class="acton">
+                        <a href="" class="link-info"><i class="fa-solid fa-calendar-days"></i></a>
+                        <a href="" class="link-secondary"><i class="fa-solid fa-money-check-dollar"></i></a>
+                        <a href="" class="link-secondary"><i class="fa-solid fa-barcode"></i></a>
+                        <a href="" class="link-secondary"><i class="fa-solid fa-paperclip"></i></a>
+                        </div>
+                        </td>
+                        <td data-label="Priority">
+                        <a class="py-1 px-2 bg-warning text-white rounded-circle">2</a>
+                        </td>
+                        <td data-label="Guest">Karen Wilder</td>
+                        <td data-label="Location"> Guest room 101</td>
+                        <td data-label="Requestor"> Annesia Pyfro</td>
+                        <td data-label="Assigned"> Cliff Baldwin a</td>
+                        <td data-label="Team"> Other</td>
+                        <td data-label="Follow Up"> <a href="" class="btn btn-danger">New <i class="fa-solid fa-arrow-up fa-rotate-by ms-1" style="--fa-rotate-angle: 45deg;"></i></a></td>
+                        </tr>  *@
+                    </tbody>
+                </table>
+
+            </div>
+
+            @* Tab All orders *@
+            <div class="tab-pane fade" id="disabled-tab-pane" role="tabpanel" aria-labelledby="disabled-tab" tabindex="0">...</div>
+
+        </div>
+    </div>
+</div>
+
+
+
+@section Scripts {
+
+    <!-- Script Js -->
+    <script>
+
+        $(document).ready(function () {
+             var endDateObj = new Date(2024,1,22);
+             var startDateObj = new Date(2024, 12, 22);// new Date(endDateObj);
+            // //startDateObj.setMonth(startDateObj.getMonth() - 2);
+            // console.log("s: " + startDateObj);
+            // console.log("e: " + endDateObj);
+            // $('#startDate').val(formatDateLoading(startDateObj));
+            // $('#endDate').val(formatDateLoading(endDateObj));
+            //drawChart()
+            periodchange();
+            drawtable(0)
+
+        });
+        function formatDateLoading(date) {
+            var d = new Date(date),
+                month = '' + (d.getMonth() + 1),
+                day = '' + d.getDate(),
+                year = d.getFullYear();
+
+            if (month.length < 2) month = '0' + month;
+            if (day.length < 2) day = '0' + day;
+
+            return [year, month, day].join('-');
+        }
+        function formatDate(date) {
+            var d = new Date(date),
+                month = '' + (d.getMonth() + 1),
+                day = '' + d.getDate(),
+                year = d.getFullYear();
+
+            if (month.length < 2) month = '0' + month;
+            if (day.length < 2) day = '0' + day;
+
+            return [year, month, day].join('');
+        }
+
+    
+        function drawChart() {
+            var startDate = $('#startDate').val();
+            var endDate = $('#endDate').val();
+            
+            startDate = formatDate(startDate);
+            endDate = formatDate(endDate);
+            //alert("1");
+            var typePeriod = $("#ddlTypePeriod").val();
+            drawStatusHouskeeping(startDate, endDate, typePeriod);
+
+            // drawChartItems(startDate, endDate);
+        }
+        // function rebuilddata() {
+        //     try {
+        //         $.ajax({
+        //             url: '@Url.Action("Rebuilddata", "Dashboard")',
+        //             type: 'POST',
+        //             //data: { startDate: startDate, endDate: endDate, typePeriod: typePeriod },
+        //             success: function (response) {
+        //                 if (response.success) {
+        //                     console.error("Error: " + response.msg);
+        //                 } else {
+        //                     console.error("Error: " + response.msg);
+        //                 }
+        //             },
+        //             error: function (xhr, status, error) {
+        //                 console.error("Error: " + error);
+        //             }
+        //         });
+        //     } catch (err) {
+        //         alert(err.message);
+        //     }
+        // }
+        function periodchange() {
+            var startDate;// = $('#startDate').val();
+            var endDate; //= $('#endDate').val();
+
+            var typePeriod = $("#ddlTypePeriod").val();
+
+            var today = new Date(2024,6,1);//2024,5,1);
+            var formattedToday = today.getFullYear().toString() +
+                ('0' + (today.getMonth() + 1)).slice(-2) +
+                ('0' + today.getDate()).slice(-2);
+            endDate = formattedToday;
+
+            console.log(typePeriod);
+            console.log(today);
+            console.log(formattedToday);
+            console.log(endDate);
+
+            if (typePeriod == "0") {//Today
+
+                startDate = formattedToday;
+            }
+            else if (typePeriod == "1") {//7Days
+                var lastWeek = new Date();
+                lastWeek.setDate(today.getDate() - 6);
+
+                var formattedLastWeek = lastWeek.getFullYear().toString() +
+                    ('0' + (lastWeek.getMonth() + 1)).slice(-2) +
+                    ('0' + lastWeek.getDate()).slice(-2);
+
+                //console.log("Last week's date (yyyyMMdd): " + formattedLastWeek);
+                startDate = formattedLastWeek;
+
+            }
+            else if (typePeriod == "2") {//30Days
+                // قم بحساب التاريخ الذي يسبق 30 يومًا
+                var startDateMonth = new Date();
+                startDateMonth.setDate(today.getDate() - 30);
+
+                // تنسيق التاريخ بالشكل الذي تريده (yyyy-MM-dd على سبيل المثال)
+                var startFormatted = startDateMonth.getFullYear() +
+                    ('0' + (startDateMonth.getMonth() + 1)).slice(-2) +
+                    ('0' + startDateMonth.getDate()).slice(-2);
+                //var endFormatted = endDate.getFullYear() + '-' + ('0' + (endDate.getMonth() + 1)).slice(-2) + '-' + ('0' + endDate.getDate()).slice(-2);
+
+                // var firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+
+                // var formattedFirstDay = firstDayOfMonth.getFullYear().toString() +
+                //     ('0' + (firstDayOfMonth.getMonth() + 1)).slice(-2) +
+                //     ('0' + firstDayOfMonth.getDate()).slice(-2);
+
+                // //console.log("First day of the month (yyyyMMdd): " + formattedFirstDay);
+                // startDate = formattedFirstDay;
+
+                // //Last day of month
+                // var lastDayOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+
+                // var formattedLastDay = lastDayOfMonth.getFullYear().toString() +
+                //     ('0' + (lastDayOfMonth.getMonth() + 1)).slice(-2) +
+                //     ('0' + lastDayOfMonth.getDate()).slice(-2);
+
+                // //console.log("Last day of the month (yyyyMMdd): " + formattedLastDay);
+                // endDate = formattedLastDay;
+                startDate = startFormatted;
+            }
+
+            //console.log("laststart: " + startDate);
+            //console.log("lastEnd: " + endDate);
+
+            drawStatusHouskeeping(startDate, endDate, typePeriod);
+            drawStatusDounat(startDate, endDate);
+        }
+        function drawStatusHouskeeping(startDate, endDate, typePeriod) {
+            try {
+                $.ajax({
+                    url: '@Url.Action("HousekeepingChart", "Dashboard")',
+                    type: 'POST',
+                    data: { startDate: startDate, endDate: endDate, typePeriod: typePeriod },
+                    success: function (response) {
+                        if (response.success) {
+                            if (typePeriod=="0") {
+                                // $('#HousekeepingChart').empty();
+                                // var chartDataHousKeeping = response.dataForHousKeeping.map(function (item) {
+                                //     return { x: item.x, y: item.y };
+                                // });
+                                // var optionsHousekeeping = {
+                                //     series: [{
+                                //         name: 'Orders',
+                                //         data: chartDataHousKeeping
+                                //     }],
+                                //     chart: {
+                                //         height: 250,
+                                //         type: 'area',
+                                //         toolbar: { show: false }
+                                //     },
+                                //     xaxis: {
+                                //         type: 'category',
+                                //         title: {
+                                //             text: typePeriod == "0" ? 'Time Periods (4 hours)' : (typePeriod == "1" ? 'Week Days' : 'Week Numbers'),
+                                //         }
+                                //     },
+                                //     yaxis: {
+                                //         title: { text: 'Order Count' }
+                                //     },
+                                //     dataLabels: { enabled: false },
+                                //     stroke: { curve: 'smooth' },
+                                //     tooltip: { x: { format: 'HH' } }
+                                // };
+                                // var housekeepingChart = new ApexCharts(document.querySelector("#HousekeepingChart"), optionsHousekeeping);
+                                // housekeepingChart.render();
+
+
+                                // // رسم الشارت لقسم Maintenance
+                                // $('#MaintenanceChart').empty();
+                                // var chartDataMaintenance = response.dataForMaintince.map(function (item) {
+                                //     return { x: item.x, y: item.y };
+                                // });
+                                // var optionsMaintenance = {
+                                //     series: [{
+                                //         name: 'Orders',
+                                //         data: chartDataMaintenance
+                                //     }],
+                                //     chart: { height: 250, type: 'area', toolbar: { show: false } },
+                                //     xaxis: { type: 'category', title: { text: 'Time Periods (4 hours)' } },
+                                //     yaxis: { title: { text: 'Order Count' } },
+                                //     dataLabels: { enabled: false },
+                                //     stroke: { curve: 'smooth' },
+                                //     tooltip: { x: { format: 'HH' } }
+                                // };
+                                // var maintenanceChart = new ApexCharts(document.querySelector("#MaintenanceChart"), optionsMaintenance);
+                                // maintenanceChart.render();
+
+                                // // رسم الشارت للطلبات المكتملة
+                                // $('#CompleteChart').empty();
+                                // var chartDataComplete = response.dataForComplete.map(function (item) {
+                                //     return { x: item.x, y: item.y };
+                                // });
+                                // var optionsComplete = {
+                                //     series: [{
+                                //         name: 'Orders',
+                                //         data: chartDataComplete
+                                //     }],
+                                //     chart: { height: 250, type: 'area', toolbar: { show: false } },
+                                //     xaxis: { type: 'category', title: { text: 'Time Periods (4 hours)' } },
+                                //     yaxis: { title: { text: 'Order Count' } },
+                                //     dataLabels: { enabled: false },
+                                //     stroke: { curve: 'smooth' },
+                                //     tooltip: { x: { format: 'HH' } }
+                                // };
+                                // var completeChart = new ApexCharts(document.querySelector("#CompleteChart"), optionsComplete);
+                                // completeChart.render();
+
+                                // اسبوع رسم الشارتات
+                                drawAreaChartDay('#HousekeepingChart', response.dataForHousKeeping, 'Time Periods(4 hours)1');
+                                //console.log(response.dataForHousKeeping);
+                                console.log("301");
+                                drawAreaChartDay('#MaintenanceChart', response.dataForMaintenance, 'Time Periods (4 hours)2');
+                                //console.log(response.dataForMaintenance);
+                                console.log("302");
+                                drawAreaChartDay('#CompleteChart', response.dataForComplete, 'Time Periods (4 hours)3');
+                                //console.log(response.dataForComplete);
+                                console.log("303");
+                            }
+                            else if (typePeriod == "1") {
+                                // اسبوع رسم الشارتات
+                                console.log("401");
+                                drawAreaChartWeek('#HousekeepingChart', response.dataForHousKeeping, 'Housekeeping Orders');
+                                console.log("402");
+                                drawAreaChartWeek('#MaintenanceChart', response.dataForMaintenance, 'Maintenance Orders');
+                                console.log("403");
+                                drawAreaChartWeek('#CompleteChart', response.dataForComplete, 'Completed Orders');
+                                console.log("404");
+                            }
+                            else if (typePeriod == "2") {
+                                $('#HousekeepingChart').empty();
+                                console.log("505");
+                                var chartDataHousKeeping = response.dataForHousKeeping.map(function (item) {
+                                    return {
+                                        x: item.YearDate + '-' + item.MonthDate + '-W' + item.WeekNumber,
+                                        y: item.CountData
+                                    };
+                                });
+
+                                var optionsHousekeeping = {
+                                    series: [{
+                                        name: 'Orders',
+                                        data: chartDataHousKeeping
+                                    }],
+                                    chart: {
+                                        height: 250,
+                                        type: 'area',
+                                        toolbar: { show: false }
+                                    },
+                                    xaxis: {
+                                        type: 'category',
+                                        title: {
+                                            text: 'Weeks of the Month',
+                                        }
+                                    },
+                                    yaxis: {
+                                        title: { text: 'Order Count' }
+                                    },
+                                    dataLabels: { enabled: false },
+                                    stroke: { curve: 'smooth' },
+                                    tooltip: { x: { format: 'dd-MM-yyyy' } }
+                                };
+
+                                var housekeepingChart = new ApexCharts(document.querySelector("#HousekeepingChart"), optionsHousekeeping);
+                                housekeepingChart.render();
+
+                            }
+
+
+                        } else {
+                            console.error("Error: " + response.returnData);
+                        }
+                    },
+                    error: function (xhr, status, error) {
+                        console.error("Error: " + error);
+                    }
+                });
+            } catch (err) {
+                alert(err.message);
+            }
+        }
+        function drawAreaChartDay(elementId, chartData, title) {
+           // $('#HousekeepingChart').empty();
+           // document.querySelector(elementId).empty();
+            console.log("Go");
+            var options = {
+                series: [{
+                    name: 'Orders',
+                    data: chartData.map(function (item) {
+                        //return { x: item.FormattedDate, y: item.CountData };
+                        return { x: item.FormattedDate, y: item.CountData };
+                    })
+                }],
+                chart: {
+                    height: 250,
+                    type: 'area',
+                    toolbar: { show: false }
+                },
+                xaxis: {
+                    type: 'category',
+                    title: { text: title }
+                },
+                yaxis: {
+                    title: { text: 'Order Count' }
+                },
+                dataLabels: { enabled: false },
+                stroke: { curve: 'smooth' },
+                tooltip: { x: { format: 'HH' } }
+            };
+            console.log(title);
+            var chart = new ApexCharts(document.querySelector(elementId), options);
+            chart.render();
+        }
+        function drawAreaChartWeek(elementId, chartData, title) {
+            //document.querySelector(elementId).empty();
+            var options = {
+                series: [{
+                    name: 'Orders',
+                    data: chartData.map(function (item) {
+                        return { x: item.FormattedDate, y: item.CountData };
+                    })
+                }],
+                chart: {
+                    height: 250,
+                    type: 'area',
+                    toolbar: { show: false }
+                },
+                xaxis: {
+                    type: 'category',
+                    title: { text: title }
+                },
+                yaxis: {
+                    title: { text: 'Order Count' }
+                },
+                dataLabels: { enabled: false },
+                stroke: { curve: 'smooth' }
+            };
+
+            var chart = new ApexCharts(document.querySelector(elementId), options);
+            chart.render();
+        }
+       
+        function drawStatusDounat(startDate, endDate) {
+            try {
+                $.ajax({
+                    url: '@Url.Action("DrawStatusDounat", "Dashboard")',
+                    type: 'POST',
+                    data: { startDate: startDate, endDate: endDate },
+                    success: function (response) {
+                        if (response.success) {
+                            //$('#HousekeepingChart').empty(); // Clear existing charts
+
+                            //alert(response.dataMaintenance);
+                            ////Update HousekeepingOrderStatus
+                            $('#HousekeepingOrderStatusChart').empty();
+                            var optionsHouskeeping = {
+                                series: response.datahouskeeping.series, // series: [11, 3, 1],
+                                labels: response.datahouskeeping.labels, // labels: ["Pending (11)", "In-process (3)", "Complete (1)"],
+                                chart: {
+                                    type: 'donut',
+                                    height: 140
+                                },
+                                colors: ['rgb(0, 143, 251)', 'rgb(254, 176, 25)', 'rgb(0, 227, 150)'], // ألوان الشارت
+                                dataLabels: {
+                                    enabled: true,
+                                    formatter: function (val) {
+                                        return Math.floor(val)
+                                    },
+
+                                },
+                                legend: {
+                                    show: true,
+
+                                    position: "left",
+                                    horizontalAlign: "center",
+                                    width: undefined,
+                                    height: undefined,
+                                    fontSize: "16px",
+                                    offsetX: 0,
+                                    offsetY: 0,
+                                    itemMargin: {
+                                        vertical: 5
+                                    }
+                                },
+                                responsive: [{
+                                    breakpoint: 1000,
+                                    options: {
+
+                                        legend: {
+                                            position: 'bottom'
+                                        }
+                                    }
+                                }]
+                            };
+
+                            var chart = new ApexCharts(document.querySelector("#HousekeepingOrderStatusChart"), optionsHouskeeping);
+                            chart.render();
+
+
+                            //////Update MaintenanceStatusOrderChart
+                            $('#MaintenanceStatusOrderChart').empty();
+                            var optionsMaintenance = {
+                                series: response.dataGuestEmployee.series, // series: [11, 2],
+                                labels: response.dataGuestEmployee.labels, // labels: ["Guest (11)", "Employee (2)"],
+                                chart: {
+                                    type: "donut",
+                                    height: 140,
+                                },
+                                legend: {
+                                    show: true,
+
+                                    position: "left",
+                                    horizontalAlign: "center",
+                                    fontSize: "16px",
+                                    itemMargin: {
+                                        vertical: 5
+                                    }
+                                },
+                                dataLabels: {
+                                    enabled: false
+                                },
+                                responsive: [
+                                    {
+                                        breakpoint: 1000,
+                                        options: {
+                                            chart: {},
+                                            legend: {
+                                                position: "bottom",
+                                            }
+                                        }
+                                    }
+                                ]
+                            };
+
+                            var chart = new ApexCharts(document.querySelector("#MaintenanceStatusOrderChart"), optionsMaintenance);
+                            chart.render();
+
+                            //////// Inspection
+                            if (response.dataInspection != null) {
+
+                                // var pendingNumber = response.dataInspection.pendingNumber
+                                // $('#Pendinginspection').css('width', response.dataInspection.pendingNumber + '%').text(progressValue + '%');
+                                // $('#Pendinginspection').css('width', progressValue + '%').text(progressValue + '%');
+                                //console.log(response.dataInspection);
+                                //if (response.dataInspection[0] > 0 || response.dataInspection[1] > 0) {
+                                    var pendingNumber = response.dataInspection[0];
+                                    var completeNumber = response.dataInspection[1];
+                                    var maxOperations = 100;
+
+                                    var pendingpercentage = (pendingNumber / maxOperations) * 100;
+                                    var completepercentage = (completeNumber / maxOperations) * 100;
+
+                                    //console.log(pendingpercentage);
+                                    //console.log(completepercentage);
+
+                                    pendingpercentage = Math.min(pendingpercentage, 100);
+                                    completepercentage =  Math.min(completepercentage, 100);
+
+                                    //$('#Pendinginspection').css('width', pendingpercentage + '%').text(pendingpercentage + '%');
+                                    //$('#Completeinspection').css('width', completepercentage + '%').text(completepercentage + '%');
+                                    var bodyinspection = `<label class="mb-1" for="">   Pending inspection</label>
+                                                                                <div class="progress mb-3" role="progressbar" aria-label="Example with label" aria-valuenow="25" aria-valuemin="0" aria-valuemax="100" style="--bs-progress-height: 1rem;--bs-progress-border-radius: 50px;">
+                                                                                                    <div id="Pendinginspection" class="progress-bar bg-danger" style="width: ${pendingpercentage}%">${pendingpercentage}</div>
+                                                                                </div>
+                                                                                <label class="mb-1" for="">       Today’s inspected rooms</label>
+                                                                                <div class="progress" role="progressbar" aria-label="Danger example" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100" style="--bs-progress-height: 1rem;--bs-progress-border-radius: 50px;">
+                                                                                 <div id="Completeinspection" class="progress-bar bg-success" style="width: ${completepercentage}%">${completepercentage}</div>
+                                                                                </div>`;
+
+                                    $('.js-inspection').html(bodyinspection);
+                                //}
+                            }
+                            else {
+
+                                var bodyinspection = `<label class="mb-1" for="">   Pending inspection</label>
+                                                                                <div class="progress mb-3" role="progressbar" aria-label="Example with label" aria-valuenow="25" aria-valuemin="0" aria-valuemax="100" style="--bs-progress-height: 1rem;--bs-progress-border-radius: 50px;">
+                                                                                 <div id="Pendinginspection" class="progress-bar bg-danger" style="width: 0%">0</div>
+                                                                                </div>
+                                                                                <label class="mb-1" for="">       Today’s inspected rooms</label>
+                                                                                <div class="progress" role="progressbar" aria-label="Danger example" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100" style="--bs-progress-height: 1rem;--bs-progress-border-radius: 50px;">
+                                                                                 <div id="Completeinspection" class="progress-bar bg-success" style="width: 0%">0</div>
+                                                                                </div>`;
+
+                                $('.js-inspection').html(bodyinspection);
+                            }
+
+                            //////// Maintenance Number
+                            if (response.dataMaintenance != null) {
+                                //console.log(response.dataMaintenance);
+                                //if (response.dataMaintenance[0] > 0 || response.dataMaintenance[1] > 0) {
+                                    //console.log(response.dataMaintenance);
+                                    //$("#PendingIssues").html(10);// response.dataMaintenance[0]);
+                                    //$("#CompletedIssues").html(response.dataMaintenance[1]);
+
+                                    var bodyMaintenance = `<a class="d-flex justify-content-between btn-light btn rounded-pill mb-4 w-100 px-3">
+                                                                    <span>Pending Issues</span><span id="PendingIssues">${response.dataMaintenance[0]} </span></a>
+                                                                    <a class="d-flex justify-content-between btn-light btn rounded-pill w-100 px-3 mb-3">
+                                                                    <span>Completed Issues</span><span id="CompletedIssues">${response.dataMaintenance[1]}</span></a>`;
+
+                                    $('.js-maintenance').html(bodyMaintenance);
+                                //}
+                            }
+                            else {
+                                // $("#PendingIssues").html("0");
+                                // $("#CompletedIssues").html("0");
+                                //console.log("OOOOOOk1");
+                                var bodyMaintenance = `<a class="d-flex justify-content-between btn-light btn rounded-pill mb-4 w-100 px-3">
+                                                                     <span>Pending Issues</span><span id="PendingIssues">0 </span></a>
+                                                                    <a class="d-flex justify-content-between btn-light btn rounded-pill w-100 px-3 mb-3">
+                                                                            <span>Completed Issues</span><span id="CompletedIssues">0</span></a>`;
+
+                                $('.js-maintenance').html(bodyMaintenance);
+                            }
+                            ////////
+
+                        } else {
+                            console.error("Error: " + response.returnData);
+                        }
+                    },
+                    error: function (xhr, status, error) {
+                        console.error("Error: " + error);
+                    }
+                });
+            } catch (err) {
+                alert(err.message);
+            }
+        }
+
+        function drawtable(statusid) {
+            try {
+                // Destroy the existing DataTable, if it exists
+                if ($.fn.DataTable.isDataTable("#tableGuestOrder")) {
+                    $("#tableGuestOrder").DataTable().destroy();
+                }
+
+                $("#tableGuestOrder").DataTable({
+                    serverSide: true,
+                    stateSave: false,
+                    processing: true,
+                    info: false,
+                    searching: false,
+                    lengthChange: false,
+                    language: {
+                        processing: '<i class="fa fa-spinner fa-spin fa-3x fa-fw"></i><span class="sr-only">Loading...</span> '
+                    },
+                    ajax: {
+                        url: '@Url.Action("GetOrdersByStatus", "Dashboard")', //'/Dashboard/GetOrdersByStatus',
+                        type: 'POST',
+                        cache: false,
+                        data: { stid: statusid },
+                    },
+                    order: [[11, 'asc'], [12, 'desc']],
+                    // columnDefs: [{
+                    //     targets: [0, 1, 2, 3, 4, 5, 6],
+                    //     visible: false,
+                    //     searchable: false
+                    // }],
+                    columns: [
+
+                        {
+                            "name": "StatusName", "render": function (data, type, row) {
+                                var statusShape = '';
+
+                                switch (row.statusId) {
+                                    case 1:
+                                        statusShape = `<i class="fa-regular fa-circle-play fa-2x"></i>`
+                                        break;
+                                    case 2:
+                                        statusShape = `<i class="fa-solid fa-circle-exclamation fa-2x"></i>`
+                                        break;
+                                    case 3:
+                                        statusShape = `<i class="fa-solid fa-circle-exclamation fa-2x"></i>`
+                                        break;
+                                    case 9:
+                                        statusShape = `<i class="fa-solid fa-circle-exclamation fa-2x"></i>`
+                                        break;
+                                    case 12:
+                                        statusShape = `<i class="fa-solid fa-circle-exclamation fa-2x"></i>`
+                                        break;
+                                    case 13:
+                                        statusShape = `<i class="fa-solid fa-circle-exclamation fa-2x"></i>`
+                                        break;
+                                }
+                                var dev = `<div class="dropdown">
+                                                                    <a class="link-success dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                                                                ${statusShape}
+                                                                    </a>
+                                                                    <ul class="dropdown-menu">
+                                                                        <li><a class="dropdown-item" href="#">Action</a></li>
+                                                                        <li><a class="dropdown-item" href="#">Another action</a></li>
+                                                                        <li><a class="dropdown-item" href="#">Something else here</a></li>
+                                                                    </ul>
+                                                                </div>`;
+                                return dev;
+
+                            }
+                        },
+                        {
+                            "name": "RunTime", "render": function (data, type, row) {
+                                var runTimeDesc = '';
+                                if (row.daysDifference == 1) {
+                                    runTimeDesc = `${row.daysDifference}<div class="time"><i class="fa-regular fa-clock text-info me-1"></i> ${row.remainingHours}h</div>`;
+                                }
+
+                                else if (row.daysDifference < 1) {
+                                    runTimeDesc = `0<div class="time"><i class="fa-regular fa-clock text-info me-1"></i> ${row.remainingHours}h</div>`;
+                                }
+                                else {
+                                    runTimeDesc = `${row.daysDifference}<div class="time"><i class="fa-regular fa-clock text-info me-1"></i> ${row.remainingHours}h</div>`;
+                                }
+                                return runTimeDesc;
+                            }
+                        },
+                        {
+                            "name": "type", "render": function (data, type, row) {
+                                var dev = `<a href="" class="link-danger"><i class="fa-solid fa-fire fa-2x"></i></a>`;
+                                return dev;
+                            }
+                        },
+                        {
+                            "name": "issue", "render": function (data, type, row) {
+                                var dev = `Towels - Requested
+                                                                <div class="acton">
+                                                                    <a href="" class="link-secondary"><i class="fa-solid fa-calendar-days"></i></a>
+                                                                    <a href="" class="link-secondary"><i class="fa-solid fa-money-check-dollar"></i></a>
+                                                                    <a href="" class="link-secondary"><i class="fa-solid fa-barcode"></i></a>
+                                                                    <a href="" class="link-secondary"><i class="fa-solid fa-paperclip"></i></a>
+                                                                </div>`;
+                                return dev;
+                            }
+                        },
+                        {
+                            "name": "Priority", "render": function (data, type, row) {
+                                var randomNumber = Math.floor(Math.random() * 3) + 1;
+                                var PriorityShape = '';
+                                switch (randomNumber) {
+                                    case 1:
+                                        PriorityShape = `<a class="py-1 px-2 bg-danger text-white rounded-circle">1</a>`
+                                        break;
+                                    case 2:
+                                        PriorityShape = `<a class="py-1 px-2 bg-warning text-white rounded-circle">2</a>`
+                                        break;
+                                    case 3:
+                                        PriorityShape = `<a class="py-1 px-2 bg-success text-white rounded-circle">3</a>`
+                                        break;
+                                }
+
+                                return PriorityShape;
+                            }
+                        },
+                        {
+                            "name": "Guest", "render": function (data, type, row) {
+                                var dev = `Karen Wilder`;
+                                return dev;
+                            }
+                        },
+                        // { "data": "order_cd", "name": "Order_cd", "data-label": "Order_cd" },
+                        // { "data": "currentDate", "name": "CurrentDate", "data-label": "CurrentDate" },
+                        { "data": "locationName", "name": "LocationName", "data-label": "LocationName" },
+                        {
+                            "name": "Requestor", "render": function (data, type, row) {
+                                var dev = `Annesia Pyfro`;
+                                return dev;
+                            }
+                        },
+                        { "data": "assignName", "name": "AssignName" },
+                        { "data": "depName", "name": "DepName", "data-label": "DepName" },
+                        {
+                            "name": "FollowUp", "render": function (data, type, row) {
+                                var dev = `<a href="" class="btn btn-danger">New <i class="fa-solid fa-arrow-up fa-rotate-by ms-1" style="--fa-rotate-angle: 45deg;"></i></a>`;
+                                return dev;
+                            }
+                        },
+                        // { "data": "createName", "name": "CreateName", "data-label": "CreateName" },
+                        // {
+                        //     "name": "CreateName", "render": function (data, type, row) {
+                        //         var PathFullPic = "";
+                        //         var createName1 = "";
+
+                        //         if (row.createName != "" && row.createName != null && row.createName != undefined) {
+                        //             console.log(row.createName);
+                        //             createName1 = row.createName;
+
+                        //             if (row.createPic == "" || row.createPic == null || row.createPic == undefined) {
+                        //                 //PathFullPic = "../../Images/avatar/bg-man.jpg";
+                        //             }
+                        //             else {
+                        //                 PathFullPic = "../../companies/" + row.companyFolder + "/images/employee/" + row.createPic;
+                        //             }
+
+                        //         }
+
+
+                        //         return `<div class="user-card d-flex align-items-center">
+                        //                         <div class="image me-1"><img src="${PathFullPic}" alt="" width = "25"></div>
+                        //                                 <div class="text">${createName1}</div>
+                        //                         </div>`;
+                        //         // return `<div class="user-card d-flex align-items-center">
+                        //         //                 <div class="text">${row.createName}</div>
+                        //         // </div>`;
+                        //     }
+                        // },
+                        // {
+                        //     "name": "AssignName", "render": function (data, type, row) {
+                        //         var PathFullPic = "";
+                        //         var assignName = "";
+
+                        //         if (row.assignName != "" || row.assignName != null || row.assignName != undefined) {
+                        //             assignName = row.assignName;
+
+                        //             if (row.assignPic == "" || row.assignPic == null || row.assignPic == undefined) {
+                        //                 //PathFullPic = "../../Images/avatar/bg-man.jpg";
+                        //             }
+                        //             else {
+
+                        //                 PathFullPic = "../../companies/" + row.companyFolder + "/images/employee/" + row.assignPic;
+                        //             }
+                        //         }
+                        //         return `<div class="user-card d-flex align-items-center">
+                        //                 <div class="image me-1"><img src="${PathFullPic}" alt="" width = "25"></div>
+                        //                 <div class="text">${assignName}</div>
+                        //                 </div>`;
+
+                        //     }
+                        // },
+
+
+                        { "data": "statusSortShow", "name": "StatusSortShow", "className": "d-none", "visible": false, "searchable": false },
+                        { "data": "dtCraeteStamp", "name": "dtCraeteStamp", "className": "d-none", "visible": false, "searchable": false },
+                        { "data": "orderID", "name": "OrderID", "data-label": "OrderID", "className": "d-none", "visible": false, "searchable": false },
+
+
+                        //{ "data": "dtCraete", "name": "dtCraete", "className": "d-none", "visible": false, "searchable": false },
+                        //{ "data": "locationID", "name": "LocationID", "className": "d-none", "visible": false, "searchable": false },
+                        //{ "data": "departmentID", "name": "DepartmentID", "className": "d-none", "visible": false, "searchable": false },
+                        //{ "data": "userIDAssign", "name": "UserIDAssign", "className": "d-none", "visible": false, "searchable": false },
+                        //{ "data": "statusId", "name": "StatusId", "className": "d-none", "visible": false, "searchable": false },
+                        //{ "data": "userIDCreate", "name": "UserIDCreate", "className": "d-none", "visible": false, "searchable": false },
+
+                    ],
+                    createdRow: function (row, data, dataIndex) {
+                        $(row).find('td').each(function (index) {
+                            $(this).attr('data-label', $('#tabledashboard th').eq(index).text());
+                        });
+                    }
+                });
+                //GetAllOrders();
+            }
+
+            catch (err) {
+                //console.log("10");
+                alert(err.message);
+                //console.error(err);
+
+            }
+
+        }
+    </script>
+    <!-- Script Js -->
+}

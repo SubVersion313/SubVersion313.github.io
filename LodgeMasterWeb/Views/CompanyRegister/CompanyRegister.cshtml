@@ -1,0 +1,110 @@
+﻿@model CompanyRegisterViewModel
+@{
+    Layout = "_Layout_Login";
+    ViewData["Title"] = "Register";
+}
+
+<!-- Sign up form -->
+<section class="signup">
+    <div class="container">
+        <div class="signup-content">
+            <div class="signup-form">
+                <h2 class="form-title">Sign up</h2>
+                <form asp-action="CompanyRegister" class="register-form" id="register-form">
+                    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                    <div class="form-group">
+                        <label asp-for="CompanyName_En"><i class="zmdi zmdi-account material-icons-name"></i></label>
+                        <input asp-for="CompanyName_En" type="text" name="txtCompanyName_En" id="txtCompanyName_En" required placeholder="Company name english" />
+                        @*                      <label asp-for="CompanyName_En">Company Name English</label>
+                        <input asp-for="CompanyName_En" class="form-control" type="text" name="txtCompanyName_En" required /> *@
+                        <span asp-validation-for="CompanyName_En" class="text-danger"></span>
+                    </div>
+                    <div class="form-group">
+                        <label asp-for="CompanyName_Ar"><i class="zmdi zmdi-account material-icons-name"></i></label>
+                        <input asp-for="CompanyName_Ar" type="text" name="txtCompanyName_Ar" id="txtCompanyName_Ar" required placeholder="Company name arabic" />
+                        @*                      <label asp-for="CompanyName_Ar">Company Name Arabic</label>
+                        <input asp-for="CompanyName_Ar" class="form-control" type="text" name="txtCompanyName_Ar" /> *@
+                        <span asp-validation-for="CompanyName_Ar" class="text-danger"></span>
+                    </div>
+                    <div class="form-group">
+                        <label asp-for="Email"><i class="zmdi zmdi-email"></i></label>
+                        <input asp-for="Email" type="email" name="txtEmail" id="email" placeholder="Company E-mail" required />
+                        @*                      <label asp-for="Email">E-mail</label>
+                        <input asp-for="Email" class="text email form-control" type="email" name="txtEmail" required /> *@
+                        <span asp-validation-for="Email" class="text-danger"></span>
+                    </div>
+
+                    <div class="form-group">
+                        <label asp-for="PersonalName">Personal Name</label>
+                        <input asp-for="PersonalName" class="form-control" type="text" name="txtPersonalName" required />
+                        <span asp-validation-for="PersonalName" class="text-danger"></span>
+                    </div>
+                    <div class="form-group">
+                        <label asp-for="Phonenumber"> Phone number</label>
+                        <input asp-for="Phonenumber" class="form-control" type="text" name="txtPhonenumber" required />
+                        <span asp-validation-for="Phonenumber" class="text-danger"></span>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Address</label>
+                        <input asp-for="Address" class="form-control" type="text" name="txtAddress" />
+                        <span asp-validation-for="Address" class="text-danger"></span>
+                    </div>
+                    <div class="form-group form-button">
+                        <input type="submit" name="signup" id="signup" class="form-submit" value="Register" />
+                    </div>
+                </form>
+
+            </div>
+
+        </div>
+    </div>
+</section>
+
+@* <div class="card mt-4">
+    <div class="card-header">
+        <h2>Register</h2>
+        Send request register
+    </div>
+
+    <div class="card-body">
+        <form asp-action="Register">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <div class="form-group">
+                <label asp-for="CompanyName_En">Company Name English</label>
+                <input asp-for="CompanyName_En" class="form-control" type="text" name="txtCompanyName_En" required />
+                <span asp-validation-for="CompanyName_En" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="CompanyName_Ar">Company Name Arabic</label>
+                <input asp-for="CompanyName_Ar" class="form-control" type="text" name="txtCompanyName_Ar" />
+                <span asp-validation-for="CompanyName_Ar" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Email">E-mail</label>
+                <input asp-for="Email" class="text email form-control" type="email" name="txtEmail" required />
+                <span asp-validation-for="Email" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="PersonalName">Personal Name</label>
+                <input asp-for="PersonalName" class="form-control" type="text" name="txtPersonalName" required />
+                <span asp-validation-for="PersonalName" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Phonenumber"> Phone number</label>
+                <input asp-for="Phonenumber" class="form-control" type="text" name="txtPhonenumber" required />
+                <span asp-validation-for="Phonenumber" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <label>Address</label>
+                <input asp-for="Address" class="form-control" type="text" name="txtAddress" />
+                <span asp-validation-for="Address" class="text-danger"></span>
+            </div>
+            <button type="submit" value="">Send Request</button>
+        </form>
+    </div>
+
+</div> *@
+

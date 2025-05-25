@@ -1,0 +1,10 @@
+﻿@model IdentityRoleFormViewModel
+
+<form method="post" asp-action="Add" class="setup-Room-page">
+    <div class="input-group mb-3">
+        <input asp-for="Name" class="form-control" placeholder="Role name..." />
+        <button type="submit" class="btn btn-primary input-group-text"> <i class="fa-solid fa-plus me-2"></i> Add Role</button>
+        
+    </div>
+    <span asp-validation-for="Name" class="text-danger"></span>
+</form>

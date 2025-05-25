@@ -1,0 +1,151 @@
+html {
+    font-size: 14px;
+}
+
+@media (min-width: 768px) {
+    html {
+        font-size: 16px;
+    }
+}
+
+html {
+    position: relative;
+    min-height: 100%;
+}
+
+*/
+
+body {
+    margin-bottom: 60px;
+}
+
+#tabledashboard tbody tr {
+    cursor: pointer;
+}
+
+/*.spinner {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 9999;*/ /* Ensure spinner appears above other elements */
+/*}
+
+.spinner-border {
+    width: 3rem;
+    height: 3rem;
+}*/
+/* Style for the spinner container */
+.spinner-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(255, 255, 255, 0.7); /* Semi-transparent white overlay */
+    z-index: 9999; /* Ensure the spinner is on top of other content */
+    display: none; /* Initially hide the spinner container */
+}
+
+/* Style for the spinner graphic */
+.spinner {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    border: 4px solid #f3f3f3; /* Light grey */
+    border-top: 4px solid #3498db; /* Blue */
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    animation: spin 1s linear infinite; /* Apply rotation animation */
+}
+
+@keyframes spin {
+    0% {
+        transform: translate(-50%, -50%) rotate(0deg);
+    }
+
+    100% {
+        transform: translate(-50%, -50%) rotate(360deg);
+    }
+}
+
+/* Style to disable user interactions */
+body.locked {
+    overflow: hidden; /* Prevent scrolling */
+    pointer-events: none; /* Disable mouse events */
+}
+
+.checkbox-container {
+    display: flex;
+    flex-wrap: wrap;
+}
+
+    .checkbox-container input[type="checkbox"] {
+        margin-right: 10px; /* Adjust spacing between checkboxes */
+        margin-bottom: 10px; /* Adjust spacing between rows */
+        margin-top: 5px; /* Adjust spacing between rows */
+    }
+
+    /* Adjust checkbox label style as needed */
+    .checkbox-container label {
+        margin-right: 10px; /* Adjust spacing between labels and checkboxes */
+    }
+
+
+.horizontal-list {
+    display: flex;
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+}
+
+    .horizontal-list li {
+        margin-right: 15px;
+    }
+        .horizontal-list li:first-child {
+            margin-left: 70px;
+        }
+        .horizontal-list li:last-child {
+            margin-right: 0;
+        }
+.custom-hr {
+    border: 0;
+    height: 1px;
+    background: #333;
+    background-image: linear-gradient(to right, #ccc, #333, #ccc);
+    margin-top: 20px;
+}
+.selected-room {
+    background-color: lightgreen;
+}
+
+.disabled-checkbox {
+    pointer-events: none;
+}
+
+
+.header-filter .dropdown .dropdown-toggle {
+    padding-inline-end: 50px;
+    text-align: start;
+}
+
+    .header-filter .dropdown .dropdown-toggle::after {
+        inset-inline-end: 18px;
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+    }
+
+.header-filter .dropdown .dropdown-menu .dropdown-item:hover {
+    color: #333 !important;
+}
+.loading-conainer {
+    position: fixed;
+    inset: 0;
+    background-color: rgba(0,0,0,0.8);
+    color: #fff;
+    display: grid;
+    place-items: center;
+    z-index: 99999;
+}

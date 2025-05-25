@@ -1,0 +1,286 @@
+﻿@using Newtonsoft.Json;
+@inject IHttpContextAccessor HttpContextAccessor
+@{
+    Layout = "_Layout_main";
+}
+@{
+    var permissions = new List<KeyValuePair<string, string>>();
+
+    // استرجاع الصلاحيات من الجلسة إذا كانت موجودة
+    var permissionsJson = HttpContextAccessor.HttpContext.Session.GetString("UserPermissions");
+
+    if (!string.IsNullOrEmpty(permissionsJson))
+    {
+        permissions = JsonConvert.DeserializeObject<List<KeyValuePair<string, string>>>(permissionsJson);
+    }
+
+    // التحقق من وجود صلاحيات معينة
+    bool canRole = permissions.Any(c => c.Key == "Permission" && c.Value == "Permissions.Role.View");
+    bool canEdit = permissions.Any(c => c.Key == "Permission" && c.Value == "Permissions.StaffManagement.Edit");
+    bool canDelete = permissions.Any(c => c.Key == "Permission" && c.Value == "Permissions.StaffManagement.Delete");
+}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-lg-12 pt-3">
+            <header class="header-filter">
+                <div class="group-filter d-flex">
+                </div>
+                <div class="date">
+                    @ViewBag.DisplayCurrntDate
+                </div>
+@*                 <a class="btn btn-master d-flex align-items-center rounded-pill btn-Create-Order" asp-controller="CreateOrders" asp-action="Index">
+                    <i class="fa-solid fa-plus me-2"></i>Create Order
+                </a> *@
+                <div class="dropdown">
+                    <button class="btn btn-primary dropdown-toggle rounded-pill btn-master" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="fa-solid fa-plus me-2"></i> Create
+                    </button>
+                    <ul class="dropdown-menu bg-primary text-white">
+                        @if (permissions != null && permissions.Any(c => c.Key == "Permission" && c.Value == "Permissions.CreateOrders.Create"))
+                        {
+                            <li><a class="dropdown-item text-white" asp-controller="CreateOrders" asp-action="Index"><i class="fa-solid fa-plus me-2"></i> Order</a></li>
+                        }
+                        @if (permissions != null && permissions.Any(c => c.Key == "Permission" && c.Value == "Permissions.InspectionOrder.Create"))
+                        {
+                            <li><a class="dropdown-item text-white" asp-controller="InspectionOrder" asp-action="InspectionOrder"><i class="fa-solid fa-plus me-2"></i> Room inspiction</a></li>
+                        }
+                    </ul>
+                </div>
+            </header>
+        </div>
+    </div>
+</div>
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-lg-12"> </div>
+        <div class="col-lg-12 pt-3">
+            <header class="header-filter flex-column">
+                <h4 class="fw-bold">Reports</h4>
+                <div class="container-fluid">
+                    <div class="row">
+                        <div class="col-lg-3 col-md-6 col-sm-12 mb-3">
+                            <div class="form-group">
+                                <label class="mb-2" for="exampleFormControlSelect1">Period Date</label>
+                                <select id="ddlFilterPeriod" class="form-select" aria-label="Default select example" onchange="changePeriod()">
+                                    <option selected value="0">Select Period  </option>
+                                    <option value="1">Today</option>
+                                    <option value="2">This Week</option>
+                                    <option value="3">Before Week </option>
+                                    <option value="4">Before Month</option>
+                                    <option value="5">Before Year</option>
+
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-lg-3 col-md-6 col-sm-12 mb-3">
+                            <div class="form-group">
+                                <label class="mb-2" for="exampleFormControlSelect1">From Date</label>
+                                <input id="txtDateFrom" class="form-control rounded-pill" type="date">
+                            </div>
+                        </div>
+                        <div class="col-lg-3 col-md-6 col-sm-12 mb-3">
+                            <div class="form-group">
+                                <label class="mb-2" for="exampleFormControlSelect1">To Date</label>
+                                <input id="txtDateTo" class="form-control rounded-pill" type="date">
+                            </div>
+                        </div>
+                        <div class="col-lg-3 col-md-6 col-sm-12 mb-3">
+                            <label class="mb-2" for="exampleFormControlSelect1"> &nbsp;</label>
+                            <div class="d-flex justify-content-around">
+                                <a id="btnFilterData" class="btn btn-master d-flex align-items-center rounded-pill btn-Create-Order" onclick="filterData()">
+                                    Apply Filter
+                                </a>
+                                <button id="btnExportData" class="btn btn-outline-dark rounded-pill" onclick="exportData()">Export<i class="fa-solid fa-cloud-arrow-down ms-2 fa-fw"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </header>
+        </div>
+    </div>
+</div>
+
+<div id="pageMasterLoad">
+    <div class="HomeDashboard">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-lg-12 mb-4">
+                    <div class="overview-Orders">
+                        <div class="header-overview mb-3 justify-content-start">
+                            <div class="title-head mb-0"> Tickets</div>
+                        </div>
+
+                        <table class="table table-responsive" id="dataTablesAvg">
+                            <thead>
+                                <tr>
+                                    <th scope="col">Department</th>
+                                    <th scope="col">Status</th>
+                                    <th scope="col">Count</th>
+                                    <th scope="col">Minutes</th>
+                                    <th scope="col">AVG Time</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-lg-12 mb-4">
+                    <div class="overview-Orders">
+                        <div class="header-overview mb-3 justify-content-start">
+                            <div class="title-head mb-0"> Items</div>
+                        </div>
+
+@*                      <asp:Label ID="lbl_grdItems_ItemsName" runat="server" Text='<%# Eval("sAccessories_Name_E")%>' />
+                        <asp:Label ID="Lbl_grdItems_Department" runat="server" Text='<%# Eval("CatName_E")%>' />
+                        <asp:Label ID="lbl_grdItems_RecordCount" runat="server" Text='<%# Eval("RecordCount")%>' /> *@
+
+                        <table class="table table-responsive" id="dataTablesItems">
+                            <thead>
+                                <tr>
+                                    <th scope="col">Items</th>
+                                    <th scope="col">Department</th>
+                                    <th scope="col">Count</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            drawtableAvg(20240101, 20240530);
+            drawtableItems(20240101, 20240530);
+        });
+        function drawtableAvg(startDate, endDate) {
+            try {
+                // Destroy the existing DataTable, if it exists
+                if ($.fn.DataTable.isDataTable("#dataTablesAvg")) {
+                    $("#dataTablesAvg").DataTable().destroy();
+                }
+                //alert("stock is: " + stock);
+                $("#dataTablesAvg").DataTable({
+                    serverSide: true,
+                    stateSave: false,
+                    processing: true,
+                    info: false,
+                    searching: false,
+                    lengthChange: false,
+                    colReorder: true,
+                    language: {
+                        processing: '<i class="fa fa-spinner fa-spin fa-3x fa-fw"></i><span class="sr-only">Loading...</span> '
+                    },
+                    ajax: {
+                        url: '/Analysis/CalcAvg',
+                        type: 'POST',
+                        cache: false,
+                        data: { startDate, endDate },
+                    },
+                    order: [],
+                    // columnDefs: [
+                    //     // {
+                    //     // targets: [0, 1],
+                    //     // visible: false,
+                    //     // searchable: false
+                    //     // },
+                    //     {
+                    //         targets: 9, // This targets the last column
+                    //         orderable: false // Disable sorting for the last column
+                    //     }
+                    // ],
+                    columns: [
+                        { "data": "depName_E", "name": "DepName_E" },
+                        { "data": "status_E", "name": "Status_E" },
+                        { "data": "recordCount", "name": "RecordCount" },
+                        { "data": "minuteCount", "name": "MinuteCount" },
+                        { "data": "time_Text", "name": "Time_Text" },
+
+                    ],
+                    // createdRow: function (row, data, dataIndex) {
+                    //     $(row).find('td').each(function (index) {
+                    //         $(this).attr('data-label', $('#dataTablesitems th').eq(index).text());
+                    //     });
+                    // }
+
+                });
+
+            }
+
+            catch (err) {
+
+                alert(err.message);
+
+            }
+
+        }
+        function drawtableItems(startDate, endDate) {
+            try {
+                // Destroy the existing DataTable, if it exists
+                if ($.fn.DataTable.isDataTable("#dataTablesItems")) {
+                    $("#dataTablesItems").DataTable().destroy();
+                }
+                //alert("stock is: " + stock);
+                $("#dataTablesItems").DataTable({
+                    serverSide: true,
+                    stateSave: false,
+                    processing: true,
+                    info: false,
+                    searching: false,
+                    lengthChange: false,
+                    colReorder: true,
+                    language: {
+                        processing: '<i class="fa fa-spinner fa-spin fa-3x fa-fw"></i><span class="sr-only">Loading...</span> '
+                    },
+                    ajax: {
+                        url: '/Analysis/CalcItems',
+                        type: 'POST',
+                        cache: false,
+                        data: { startDate, endDate },
+                    },
+                    order: [],
+                    // columnDefs: [
+                    //     // {
+                    //     // targets: [0, 1],
+                    //     // visible: false,
+                    //     // searchable: false
+                    //     // },
+                    //     {
+                    //         targets: 9, // This targets the last column
+                    //         orderable: false // Disable sorting for the last column
+                    //     }
+                    // ],
+                    columns: [
+                        { "data": "itemName_E", "name": "ItemName_E" },
+                        { "data": "depName_E", "name": "DepName_E" },
+                        { "data": "recordCount", "name": "RecordCount" },
+
+                    ],
+                    // createdRow: function (row, data, dataIndex) {
+                    //     $(row).find('td').each(function (index) {
+                    //         $(this).attr('data-label', $('#dataTablesitems th').eq(index).text());
+                    //     });
+                    // }
+
+                });
+
+            }
+
+            catch (err) {
+
+                alert(err.message);
+
+            }
+
+        }
+    </script>
+}

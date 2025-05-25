@@ -1,0 +1,72 @@
+/* Start Model Filter Home */
+.model-filter-home {
+  .modal-dialog {
+    // max-width: 750px;
+    @media (max-width: 990px) {
+      max-width: 80%;
+    }
+    .modal-title {
+      .input-group {
+        .form-control {
+          border-start-start-radius: 35px;
+          border-end-start-radius: 35px;
+        }
+        button {
+          border-start-end-radius: 35px;
+          border-end-end-radius: 35px;
+        }
+      }
+    }
+    .group-button-toggle {
+      flex-wrap: wrap;
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      @media (max-width: 768px) {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 15px;
+      }
+      @media (max-width: 576px) {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      .btn-toggle {
+        // flex: 1 0 0;
+        text-align: center;
+        justify-content: center;
+      }
+    }
+    .modal-footer {
+      .btn-apply {
+        background-color: $mColor;
+        &:hover {
+          background-color: #1d4d74;
+          box-shadow: 0 0 15px rgba(#000, 0.5);
+        }
+      }
+    }
+  }
+}
+/* End Model Filter Home */
+/* Start Model State Table */
+.model-state-Table {
+  .Recent-part {
+    background-color: #f7f7f7;
+    height: 100%;
+    .list-group {
+      .list-group-item {
+        border-radius: 0;
+        background-color: transparent;
+        border: none;
+        border-bottom: var(--bs-list-group-border-width) solid
+          var(--bs-list-group-border-color);
+        .title {
+          color: $mColor;
+        }
+        .note {
+          font-style: italic;
+          color: #878787;
+        }
+      }
+    }
+  }
+}
+/* End Model State Table */

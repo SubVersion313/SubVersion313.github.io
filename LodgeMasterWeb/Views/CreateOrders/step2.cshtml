@@ -1,0 +1,374 @@
+﻿@model OrderStepOneViewModel
+@using Newtonsoft.Json;
+@inject IHttpContextAccessor HttpContextAccessor
+@{
+    Layout = "_Layout_main";
+}
+@{
+    var permissions = new List<KeyValuePair<string, string>>();
+
+    // استرجاع الصلاحيات من الجلسة إذا كانت موجودة
+    var permissionsJson = HttpContextAccessor.HttpContext.Session.GetString("UserPermissions");
+
+    if (!string.IsNullOrEmpty(permissionsJson))
+    {
+        permissions = JsonConvert.DeserializeObject<List<KeyValuePair<string, string>>>(permissionsJson);
+    }
+
+    // التحقق من وجود صلاحيات معينة
+    bool canRole = permissions.Any(c => c.Key == "Permission" && c.Value == "Permissions.Role.View");
+    bool canEdit = permissions.Any(c => c.Key == "Permission" && c.Value == "Permissions.StaffManagement.Edit");
+    bool canDelete = permissions.Any(c => c.Key == "Permission" && c.Value == "Permissions.StaffManagement.Delete");
+}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-lg-12 pt-3">
+            <header class="header-filter">
+                <div class="group-filter d-flex">
+                    @*<div class="input-group me-3">
+                    <input class="form-control" type="search" placeholder="Search" aria-label="Recipient's username" aria-describedby="button-addon2">
+                    <button class="btn btn-outline-master" id="button-addon2" type="button"> <i class="fa-solid fa-magnifying-glass"></i></button>
+                    </div>
+                    <button class="btn btn-outline-master d-flex align-items-center" type="button" data-bs-toggle="modal" data-bs-target="#exampleModal"> <i class="fa-solid fa-arrow-down-wide-short me-2"></i>Filter</button>
+                    *@
+                </div>
+                <div class="date">
+                    @ViewBag.DisplayCurrntDate
+                </div>
+                @*                 <a class="btn btn-master d-flex align-items-center rounded-pill btn-Create-Order" asp-controller="CreateOrders" asp-action="Index">
+                <i class="fa-solid fa-plus me-2"></i>Create Order
+                </a> *@
+                <div class="dropdown">
+                    <button class="btn btn-primary dropdown-toggle rounded-pill btn-master" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="fa-solid fa-plus me-2"></i> Create
+                    </button>
+                    <ul class="dropdown-menu bg-primary text-white">
+                        @if (permissions != null && permissions.Any(c => c.Key == "Permission" && c.Value == "Permissions.CreateOrders.Create"))
+                        {
+                            <li><a class="dropdown-item text-white" asp-controller="CreateOrders" asp-action="Index"><i class="fa-solid fa-plus me-2"></i> Order</a></li>
+                        }
+                        @if (permissions != null && permissions.Any(c => c.Key == "Permission" && c.Value == "Permissions.InspectionOrder.Create"))
+                        {
+                            <li><a class="dropdown-item text-white" asp-controller="InspectionOrder" asp-action="InspectionOrder"><i class="fa-solid fa-plus me-2"></i> Room inspiction</a></li>
+                        }
+                    </ul>
+                </div>
+            </header>
+        </div>
+    </div>
+</div>
+<div id="pageMasterLoad">
+    <div class="Create-Order">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-lg-12">
+                    <div class="Create-Order mt-4">
+                        <div class="container-fluid">
+                            <form method="post">
+                                <input type="hidden" id="hdBasketId" value="@Model.BasketID" />
+                                <input type="hidden" id="hdLocationId" value="@Model.LocationID" />
+                                <input type="hidden" id="hdLocationName" value="@Model.LocationName" />
+                                <div class="row">
+                                    <div class="col-lg-12">
+                                        <div class="card-master mb-4">
+                                            <div class="title-card position-relative ">
+                                                <a class="position-absolute top-0 start-0" asp-controller="CreateOrders" asp-action="BackstepOne"><i class="fa-solid fa-arrow-left-long"></i></a>
+                                                @* <Button type="submit" class="btn btn-primary btn-sm" asp-action="BackstepOne">Back Test</Button> *@
+                                                <h4 class="mb-4 text-center">Assignees</h4>
+                                                <div class="body-card">
+                                                    <div class="row">
+
+                                                        <div class="col-lg-6 d-flex  justify-content-end ">
+                                                            <div>
+
+                                                                <label class="title">Priority</label>
+                                                                <div class="group-button-toggle d-flex" id="buttonToggle">
+                                                                    <div class="btn-toggle bg-outline-open ">
+                                                                        <div class="text  ">1</div>
+                                                                    </div>
+                                                                    <div class="btn-toggle bg-outline-process active ">
+                                                                        <div class="text  ">2</div>
+                                                                    </div>
+                                                                    <div class="btn-toggle bg-outline-Completed  ">
+                                                                        <div class="text  ">3</div>
+                                                                    </div>
+
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-lg-6 ">
+                                                            <div class="ms-3">
+
+                                                                <label class="d-block text-start">Order  By </label>
+                                                                <div class="btn-group" role="OrderBy" aria-label="Order radio toggle button group">
+
+                                                                    <div class="form-check form-check-inline">
+                                                                        <input class="form-check-input" type="radio" name="FromGuest" id="inlineRadio1" value="1" checked>
+                                                                        <label class="form-check-label" for="inlineRadio1">Guest</label>
+                                                                    </div>
+                                                                    <div class="form-check form-check-inline">
+                                                                        <input class="form-check-input" type="radio" name="FromGuest" id="inlineRadio2" value="0">
+                                                                        <label class="form-check-label" for="inlineRadio2">Employee</label>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    @{
+                                        foreach (var item in Model.OrderItems)
+                                        {
+                                                <div class="card-master mb-4 ItemsDataBlockDiv">
+                                                    <div class="body-card">
+                                                        <div class="d-flex justify-content-between flex-wrap mb-4 js-basketitem">
+                                                            <h4 class="js-render-title-item">@item.ItemName (@item.qty)</h4>
+
+                                                            <div class="group-icon d-flex">
+                                                                <a onclick="OnClcikEditItem(this);" id="btnEditItem" class="btn btn-outline-primary mx-2 js-render-modal-item"
+                                                                   data-oldDepartmentID="@item.DepartmentID"
+                                                                   data-oldDepartmentName="@item.DepartmentName"
+                                                                   data-Basketorderid="@item.OrderId"
+                                                                   data-Basketid="@item.BasketID"
+                                                                   data-itemid="@item.ItemID"
+                                                                   data-itemname="@item.ItemName"
+                                                                   data-itemqty="@item.qty">
+                                                                    <i class="fa-solid fa-pencil fa-fw me-2"> </i>Edit
+                                                                </a>
+                                                                <button class="btn btn-outline-danger mx-2 js-removeitembasket" data-orderId="@item.OrderId" data-Basketid="@item.BasketID" data-itemid="@item.ItemID" type="button"> <i class="fa-regular fa-trash-can fa-fw me-2"> </i>Remove</button>
+                                                            </div>
+                                                        </div>
+                                                        <div class="container-fluid">
+                                                            <div class="row">
+                                                                <div class="col-lg-8 col-md-12 col-sm-12 mb-4 p-0">
+                                                                    <label class="mb-4" for=""> Department </label>
+                                                                    <label readonly id="lbldepartmentDis" class="form-control js-render-displaydepartmentname">@item.DepartmentName</label>
+                                                                    @*<select class="form-select" aria-label="Default select example" asp-items="@Model.LstDepartment" >
+                                                        </select>
+                                                        // </div>*@
+                                                                </div>
+                                                                <div class="col-lg-4 col-md-12 col-sm-12 mb-4">
+                                                                    <label class="mb-4" for=""> Assignee</label>
+                                                                    <select id="ddlEmpAssignee" class="form-select js-render-oldempdepartmentassign" aria-label="Default select example" asp-items="@item.LstEmpDepartment" onchange="updateEmpAssignee(this)">
+                                                                    </select>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                        }
+                                    }
+
+
+                                    @* <a class="btn btn-dark d-block w-100 mb-5 p-3" href="button" data-bs-toggle="modal" data-bs-target="#OrderPlaced">Place Order</a> *@
+                                    @* <button type="button" class="btn btn-dark d-block w-100 mb-5 p-3" asp-action="Saved">Place Order</button> *@
+                                    <button type="button" class="btn btn-dark d-block w-100 mb-5 p-3" onclick="savedData();">Place Order </button>
+                                    <div class="loading-conainer d-none">
+                                       <i class="fa fa-spinner fa-5x fa-spin"></i>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- Modal-->
+<div class="modal fade" id="OrderPlaced" tabindex="-1" aria-labelledby="OrderPlacedLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-body text-center p-5">
+                <div class="icon mb-3 text-primary"> <i class="fa-solid fa-circle-check fa-fw fa-9x"> </i></div>
+                <h3 class="mb-3 fw-bold"> Order Placed</h3>
+                <p class="mb-3"> Your has been order placed and SMS has been sent successfully. To Preview the SMS <a href="">Click here</a></p>
+                <a class="btn btn-master px-5 rounded-pill btn-Create-Order" href="#" onclick="ConfrimModal()">Continue</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .group-button-toggle {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+    }
+
+        .group-button-toggle .btn-toggle {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: grid;
+            place-items: center;
+        }
+</style>
+
+
+    @section Scripts{
+    <script>
+    $(document).ready(function () {
+        $("#buttonToggle .btn-toggle").click(function () {
+            $(this).addClass("active").siblings().removeClass("active");
+        });
+    });
+
+
+    // $("#buttonToggle .btn-toggle").click(function () {
+    //     $(this).addClass("active").siblings().removeClass("active");
+    // });
+
+        var ItemsDataBlockDiv = null;
+        
+        function updateEmpAssignee(src) {
+            ItemsDataBlockDiv = $(src).closest(".ItemsDataBlockDiv");
+            var BasketOrderId = ItemsDataBlockDiv.find("#btnEditItem").data("basketorderid");
+            var BasketID = ItemsDataBlockDiv.find("#btnEditItem").data("basketid");
+            var Itemid = ItemsDataBlockDiv.find("#btnEditItem").data("itemid");
+
+            var EmpAssignee = ItemsDataBlockDiv.find("#ddlEmpAssignee").val();
+
+            $.ajax({
+                url: '/CreateOrders/UpdateEmpAssigneeDepartment',
+                method: 'POST',
+                //contentType: 'application/json',
+                data: { "OrderId": BasketOrderId, "basketid": BasketID, "itemid": Itemid, "empAssignID": EmpAssignee },
+                cache: false,
+                success: function (form) {
+
+                },
+                error: function () {
+                    alert("Bad");
+                }
+            });
+        }
+
+        function removeDivclass() {
+            //$("body").removeClass("selectobject");
+            $(".selectobject").removeClass("selectobject");
+        }
+        function OnClcikEditItem(src) {
+            removeDivclass();
+            ItemsDataBlockDiv = $(src).closest(".ItemsDataBlockDiv");
+            ItemsDataBlockDiv.addClass("selectobject");
+            var DataItem = $(src);
+            var Itemid = DataItem.data("itemid");
+            var Basketid = DataItem.data("basketid");
+            var OldQty = DataItem.data("itemqty");
+            var OldItemname = DataItem.data("itemname");
+            var BasketOrderId = DataItem.data("basketorderid");
+
+            ///New By Aziz
+            var oldDepartmentID = DataItem.data("olddepartmentid"); //ItemsDataBlockDiv.find("").data("");
+            var oldDepartmentName = DataItem.data("olddepartmentname");
+            var oldEmpAssingeeId = ItemsDataBlockDiv.find("#ddlEmpAssignee").val();
+            var oldEmpAssingeeName = ItemsDataBlockDiv.find("#ddlEmpAssignee option:selected").text();
+            //alert(oldEmpAssingeeName);
+            //var oldEmpAssingeeName1 = $("#ddlEmpAssignee option:selected").text(),ItemsDataBlockDiv);
+
+            // console.log('item: ' + DataItem.data("itemid"));
+            var ModalChangeAssignee = $('#ModalChangeAssignee');
+
+            if (Itemid == null || Itemid == "" || Itemid == undefined) {
+                alert('Error inside order Itemid');
+                return false;
+            }
+            if (Basketid == null || Basketid == "" || Basketid == undefined) {
+                alert('Error inside order Basketid');
+                return false;
+            }
+            var objData = {
+                BasketID: Basketid,
+                OldItemID: Itemid,
+                OldItemName: OldItemname,
+                OldItemQty: OldQty,
+                BasketOrderId: BasketOrderId,
+                OldDepartmentID: oldDepartmentID,
+                OldDepartmentName: oldDepartmentName,
+                OldEmpAssigneeID: oldEmpAssingeeId,
+                OldEmpAssigneeName: oldEmpAssingeeName
+
+            };
+
+            var jsonobjData = JSON.stringify(objData);
+
+            $.ajax({
+                url: '/CreateOrders/GetItemDetails',
+                method: 'POST',
+                contentType: 'application/json',
+                data: jsonobjData,
+                cache: false,
+                success: function (form) {
+                    //console.log(form);
+                    ModalChangeAssignee.find('.modal-body').html(form);
+                    ModalChangeAssignee.modal('show');
+                },
+                error: function () {
+                    alert("Bad");
+                }
+            });
+        }
+        function CancelModal() {
+            $("#OrderPlaced").modal('hide');
+        }
+        function ConfrimModal() {
+            CancelModal();
+            window.location.href = '@Url.Action("Index", "Dashboard")';
+        }
+        function savedData() {
+            // var Obj1 = {};
+            // Obj1.x = 1;
+            // Obj1.y = 2;
+            // var Obj2 = {};
+            // Obj2.z = 1;
+            // Obj2.e = 2;
+            // var ListOfObj1 = [];
+            // ListOfObj1.push(Obj1);
+            var btntype = 0;
+            var hdBasketId = $("#hdBasketId").val();
+            // console.log(hdBasketId);
+
+            var hdLocationId = $("#hdLocationId").val();
+            // console.log(hdLocationId);
+            $.ajax({
+                url: '@Url.Action("SavedOrder", "CreateOrders")',
+                type: "POST",
+                //data: { "Obj1": Obj1, "Obj2": Obj2, "ListOfObj1": ListOfObj1 },
+                data: { "Locationid": hdLocationId, "Basketid": hdBasketId, "btntype": btntype },
+                dataType: "json",
+                success: function (result) {
+                    if (result.success) {
+                        //alert(result.message);
+                        //alert(result.orderguid);
+                        //console.log(result.returnData);
+
+                        //if (result.returnData && result.returnData.age == 25) {
+                        $("#OrderPlaced").modal('show');
+                        sleep(1000);
+                        $("#OrderPlaced").modal('hide');
+                        window.location.href = "/Dashboard/Index";
+                        //}
+
+
+                    } else {
+                        alert(result.message);
+                    }
+                },
+                beforeSend: function() {
+                    $(".loading-conainer").removeClass("d-none");
+                },
+                complete: function() {
+                    $(".loading-conainer").addClass("d-none");
+                },
+                error: function (err) {
+                    return false;
+                }
+            });
+        }
+    </script>
+    }

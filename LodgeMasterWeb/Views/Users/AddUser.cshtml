@@ -1,0 +1,120 @@
+﻿@model CreateUserFormViewModel
+@{
+    Layout = "_Layout_main";
+    ViewData["Titel"] = "Add User";
+}
+<div id="pageMasterLoad">
+    <div class="HomeDashboard">
+        <div class="container-fluid">
+            <div class="row">
+                <form asp-controller="Users" asp-action="AddUser" enctype="multipart/form-data">
+
+                    <div class="col-lg-12 mb-4">
+                        <div class="overview-Orders">
+                            <h1 class="text-center mb-3">Add User</h1>
+                            <div class="container-fluid">
+                                <div class="row justify-content-center">
+                                    <div class="col-lg-5 col-md-6 col-sm-12 mb-3">
+                                        <div class="form-group">
+                                            <label>First name</label>
+                                            <input class="form-control" asp-for="FirstName" type="text">
+                                            <span asp-validation-for="FirstName" class="text-danger"></span>
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-5 col-md-6 col-sm-12 mb-3">
+                                        <div class="form-group">
+                                            <label asp-for="LastName">Last name</label>
+                                            <input class="form-control" asp-for="LastName" type="text">
+                                            <span asp-validation-for="LastName" class="text-danger"></span>
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-5 col-md-6 col-sm-12 mb-3">
+                                        <div class="form-group">
+                                            <label for="">Email</label>
+                                            <input class="form-control" id="txtemail" type="email">
+                                            <span asp-validation-for="sEmail" class="text-danger"></span>
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-5 col-md-6 col-sm-12 mb-3">
+                                        <div class="form-group">
+                                            <label for="">Group Role</label>
+                                            <select class="form-select" aria-label="Default select example" asp-for="UserGroup" asp-items="Model.sysRole">
+                                                <option value="">Select Group Role</option>
+                                            </select>
+                                            <span asp-validation-for="UserGroup" class="text-danger"></span>
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-5 col-md-6 col-sm-12 mb-3">
+                                        <div class="form-group">
+                                            <label for="">Departments</label>
+                                            <select class="form-select " id="ddlDepartment" asp-for="DepartmentID" asp-items="Model.DepartmentData">
+                                                <option value="">Select Department</option>
+                                            </select>
+                                            <span asp-validation-for="DepartmentID" class="text-danger"></span>
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-5 col-md-6 col-sm-12 mb-3">
+                                        <div class="form-group">
+                                            <label for="">Mobile</label>
+                                            <input type="text" class="form-control" id="txtMobile">
+                                            <span asp-validation-for="mobile" class="text-danger"></span>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-lg-5 col-md-6 col-sm-12 mb-4">
+                                        <div class="form-check form-switch d-flex p-0">
+                                            <label class="form-check-label" for="chkSuperviesor">Superviesor</label>
+                                            <input class="mx-2 form-check-input" id="chkSuperviesor" type="checkbox" role="switch">
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-5 col-md-6 col-sm-12 mb-4">
+                                        <div class="form-check form-switch d-flex p-0">
+                                            <label class="form-check-label" for="chkActive">Active</label>
+                                            <input class="mx-2 form-check-input" id="chkActive" type="checkbox" role="switch" checked>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-lg-5 col-md-6 col-sm-12 mb-3">
+                                        <div class="form-group">
+                                            <label for="">Login name</label>
+                                            <input type="text" class="form-control" id="txtLoginName">
+                                            <span asp-validation-for="UserLogin" class="text-danger"></span>
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-5 col-md-6 col-sm-12 mb-2">
+
+                                        <div class="form-group">
+                                            <input type="file" class="form-control form-control-sm" asp-for="EmployeeImage" id="customFile">
+                                            @* <small>Only @FileSettings.AllowedExtensions files are allwoed with max size (@FileSettings.MaxFileSizeInMB) MB</small> *@
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-5 col-md-6 col-sm-12 mb-3">
+                                        <div class="form-group">
+                                            <label for="">password</label>
+                                            <input type="text" class="form-control" id="txtPassworde">
+                                            <span asp-validation-for="UserPassword" class="text-danger"></span>
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-5 col-md-6 col-sm-12 mb-3">
+                                        <div class="form-group">
+                                            <label for="">confirm password</label>
+                                            <input type="text" class="form-control" id="txtPasswordeConfirm">
+
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-10 col-md-12 col-sm-12 d-flex mb-2">
+                                        <button class="btn btn-primary w-100 rounded-pill" type="submit"> Add</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+@section Scripts{
+    <partial name="_validationscriptspartial" />
+    
+}

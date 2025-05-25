@@ -1,0 +1,1170 @@
+﻿@using Newtonsoft.Json;
+@inject IHttpContextAccessor HttpContextAccessor
+@{
+    Layout = "_Layout_main";
+}
+@{
+    var permissions = new List<KeyValuePair<string, string>>();
+
+    // استرجاع الصلاحيات من الجلسة إذا كانت موجودة
+    var permissionsJson = HttpContextAccessor.HttpContext.Session.GetString("UserPermissions");
+
+    if (!string.IsNullOrEmpty(permissionsJson))
+    {
+        permissions = JsonConvert.DeserializeObject<List<KeyValuePair<string, string>>>(permissionsJson);
+    }
+
+    // التحقق من وجود صلاحيات معينة
+    bool canRole = permissions.Any(c => c.Key == "Permission" && c.Value == "Permissions.Role.View");
+    bool canEdit = permissions.Any(c => c.Key == "Permission" && c.Value == "Permissions.StaffManagement.Edit");
+    bool canDelete = permissions.Any(c => c.Key == "Permission" && c.Value == "Permissions.StaffManagement.Delete");
+}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-lg-12 pt-3">
+            <header class="header-filter">
+                <div class="group-filter d-flex">
+                    <div class="input-group me-3">
+                        <input id="txtSearch" class="form-control" type="search" placeholder="Search" aria-label="Recipient's username" aria-describedby="button-addon2">
+                        <button class="btn btn-outline-master" id="button-addon2" type="button" onclick="DashboardSearch()"> <i class="fa-solid fa-magnifying-glass"></i></button>
+                    </div>
+                    <button class="btn btn-outline-master d-flex align-items-center" type="button" data-bs-toggle="modal" data-bs-target="#exampleModal"> <i class="fa-solid fa-arrow-down-wide-short me-2"></i>Filter</button>
+                </div>
+                <div class="date">
+                    @ViewBag.DisplayCurrntDate
+                </div>
+                <div class="dropdown">
+                    <button class="btn btn-primary dropdown-toggle rounded-pill btn-master" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="fa-solid fa-plus me-2"></i> Create
+                    </button>
+                    <ul class="dropdown-menu bg-primary text-white">
+                        @if (permissions != null && permissions.Any(c => c.Key == "Permission" && c.Value == "Permissions.CreateOrders.Create"))
+                        {
+                            <li><a class="dropdown-item text-white" asp-controller="CreateOrders" asp-action="Index"><i class="fa-solid fa-plus me-2"></i> Order</a></li>
+                        }
+                        @if (permissions != null && permissions.Any(c => c.Key == "Permission" && c.Value == "Permissions.InspectionOrder.Create"))
+                        {
+                            <li><a class="dropdown-item text-white" asp-controller="InspectionOrder" asp-action="InspectionOrder"><i class="fa-solid fa-plus me-2"></i> Room inspiction</a></li>
+                        }
+                    </ul>
+                </div>
+            </header>
+        </div>
+    </div>
+</div>
+
+<div class="time-management addTask-page" id="pageMasterLoad">
+    <div class="container-fluid pt-3">
+        <ul class="nav nav-tabs" id="myTab" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="home-tab" data-bs-toggle="tab" data-bs-target="#home-tab-pane" type="button" role="tab" aria-controls="home-tab-pane" aria-selected="true">Task Status</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="profile-tab" data-bs-toggle="tab" data-bs-target="#profile-tab-pane" type="button" role="tab" aria-controls="profile-tab-pane" aria-selected="false">Over View</button>
+            </li>
+        </ul>
+        <div class="tab-content" id="myTabContent">
+            <div class="tab-pane fade show active" id="home-tab-pane" role="tabpanel" aria-labelledby="home-tab" tabindex="0">
+                <header class="header-filter mt-3 g-3">
+                    <div class="container-fluid">
+                        <div class="row">
+                            <div class="col-lg-3">
+                                <div class="mb-3">
+                                    <label class="form-label" for="">Employee</label>
+                                    <select class="form-select" aria-label="Default select example">
+                                        <option selected="">Open this select menu</option>
+                                        <option value="1">One</option>
+                                        <option value="2">Two</option>
+                                        <option value="3">Three</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-lg-3">
+                                <div class="mb-3">
+                                    <label class="form-label" for="">Shift</label>
+                                    <select class="form-select" aria-label="Default select example">
+                                        <option selected="">Open this select menu</option>
+                                        <option value="1">One</option>
+                                        <option value="2">Two</option>
+                                        <option value="3">Three</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-lg-3">
+                                <div class="mb-3">
+                                    <label class="form-label" for="">Room</label>
+                                    <select class="form-select" aria-label="Default select example">
+                                        <option selected="">Open this select menu</option>
+                                        <option value="1">One</option>
+                                        <option value="2">Two</option>
+                                        <option value="3">Three</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-lg-3">
+                                <div class="mb-3 text-end">
+                                    <label class="form-label" for="">&nbsp;</label><a class="btn btn-master rounded-pill d-block"><i class="fa-solid fa-magnifying-glass me-2"></i>Search</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </header>
+            </div>
+            <div class="tab-pane fade" id="profile-tab-pane" role="tabpanel" aria-labelledby="profile-tab" tabindex="0"> </div>
+        </div>
+    </div>
+</div>
+
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            $('.icon-toggle-down').click(function () {
+                $(this).closest('tr').toggleClass('full-screen');
+            });
+
+            var options = {
+                chart: {
+                    type: "line",
+                    height: 350
+                },
+
+                series: [
+                    {
+                        name: "Ideal Trend",
+                        type: "line",
+                        data: [300, 250, 200, 150, 100, 50, 0],
+                        color: "#feb019"
+                    },
+                    {
+                        name: "Remaining",
+                        type: "area",
+                        data: [330, 230, 210, 190],
+                        color: "#0078D4"
+                    }
+                ],
+                stroke: {
+                    width: [5, 2]
+                },
+                dataLabels: {
+                    enabled: false
+                },
+                fill: {
+                    opacity: [0.85, 0.25],
+                    gradient: {
+                        inverseColors: false,
+                        shade: "light",
+                        type: "vertical",
+                        opacityFrom: 0.85,
+                        opacityTo: 0.55
+                    }
+                },
+                xaxis: {
+                    categories: [
+                        "Sunday",
+                        "Monday",
+                        "Tuesday",
+                        "Wednesday",
+                        "Thursday",
+                        "Friday",
+                        "Saturday"
+                    ]
+                }
+            };
+
+            var chart = new ApexCharts(document.querySelector("#chartOverView"), options);
+            chart.render();
+
+
+            var options = {
+                chart: {
+                    type: "donut",
+                    height: 500
+                },
+
+                labels: ["New", "Active", "Resolved", "Closed"],
+                dataLabels: {
+                    enabled: false
+                },
+                plotOptions: {
+                    pie: {
+                        donut: {
+                            labels: {
+                                show: true,
+                                name: {
+                                    show: true,
+                                    fontSize: "22px",
+                                    fontFamily: "Rubik",
+                                    color: "#f00",
+                                    offsetY: -10
+                                },
+                                value: {
+                                    show: true,
+                                    fontSize: "16px",
+                                    fontFamily: "Helvetica, Arial, sans-serif",
+                                    color: undefined,
+                                    fontWeight: 900,
+                                    offsetY: 16,
+                                    color: "#333",
+                                    formatter: function (val) {
+                                        return val;
+                                    }
+                                },
+                                total: {
+                                    show: true,
+                                    label: "Total",
+                                    color: "#333",
+                                    fontWeight: 900,
+                                    formatter: function (w) {
+                                        return w.globals.seriesTotals.reduce((a, b) => {
+                                            return a + b;
+                                        }, 0);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                series: [44, 55, 41, 17],
+                tooltip: {
+                    enabled: true,
+
+                    y: {
+                        series: [
+                            {
+                                name: "series A"
+                            },
+                            {
+                                name: "series B"
+                            }
+                        ],
+                        title: {
+                            formatter: function (seriesName) {
+                                return "";
+                            }
+                        }
+                    }
+                },
+                legend: {
+                    show: true,
+                    position: "bottom",
+                    labels: {
+                        colors: "#333"
+                    },
+                    markers: {
+                        width: 12,
+                        height: 12,
+                        strokeWidth: 0,
+                        radius: 0
+                    }
+                }
+            };
+
+            var chart = new ApexCharts(document.querySelector("#TotalTasks"), options);
+
+            chart.render();
+        });
+        // $(document).ready(function () {
+
+        //     $('#txtSearch').on('search', function () {
+        //         if ($(this).val() === '') {
+        //             // The X button was clicked, and the input is empty
+        //             //console.log('Clear button clicked!');
+        //             // Add your custom action here
+        //             GetCountOrders();
+        //         }
+        //     });
+
+        //     $('#txtSearch').on('keyup', function (e) {
+        //         // Check if the pressed key is the backspace key (key code 8)
+        //         if (e.which === 8) {
+        //             if ($(this).val() === '') {
+        //                 GetCountOrders();
+        //             };
+
+        //         }
+        //     });
+
+        //     GetCountOrders();
+
+        //     //var table = $('.dt-handPoint').DataTable();
+
+        //     // setTimeout(function () {
+        //     //     var data = [
+        //     //         // Your data here
+        //     //     ];
+
+        //     //     // Clear the existing DataTable and add the new data
+        //     //     table.clear().rows.add(data).draw();
+        //     // $("#txtsearch").on("keyup", function () {
+        //     //     var txtsearchinput = $("#txtsearch");
+        //     //     alert(txtsearchinput.val());
+
+        //     //     table.search(txtsearchinput.val()).draw();
+        //     //     drawtable(0);
+        //     // });
+
+        //     var table = $('#tabledashboard').DataTable();
+        //     //console.log(table);
+        //     // $(".dt-handPoint tbody").on("click", "tr", function () {
+        //     $("#tabledashboard tbody").on("click", "tr", function () {
+        //         table.$('tr.selected').removeClass('selected');
+        //         $(this).addClass('selected');
+
+        //         //var row = table.row(this);
+        //         //var rowData = table.row(this).data();
+        //         var column1Data1 = $(this).find('td:eq(7) a').data("href");//text();
+        //         //alert(column1Data1);
+        //         // alert(this);
+        //         // Check if data is available
+        //         if (column1Data1) {
+        //             // Show wait cursor or loading spinner
+        //             $("body").css("cursor", "wait");
+
+        //             //alert("hi");
+        //             // Access specific columns in the row
+        //             //var column1Data = rowData[0];
+        //             //var column2Data = rowData[1];
+        //             //alert(column1Data);
+        //             // Use the data as needed
+        //             //console.log('Data from column 1:', column1Data);
+        //             //console.log('Data from column 2:', column2Data);
+        //             //window.location.href = column1Data1;
+        //             // Show wait cursor or loading spinner
+        //             //$('#spinner').show();
+        //             setTimeout(function () {
+        //                 // Navigate to the new page
+        //                 window.location.href = column1Data1;
+        //             }, 100);
+        //             //$('#spinner').hide();
+        //         } else {
+
+        //             //alert("No");
+        //             console.log('Row data is undefined or empty.');
+        //         }
+        //     });
+
+        //     // function myCustomFunction(data) {
+        //     //     alert("You clicked on row: " + data);
+        //     // }
+
+        //     $(".js-filter").on("click", function () {
+
+
+        //         var lableFilter = $(this);
+
+        //         if (lableFilter.data("type") != null) {
+        //             drawtable(lableFilter.data("type"));
+
+        //         }
+        //     });
+        // });
+
+        // function GetAllOrders() {
+
+        //     $.ajax({
+        //         url: '@Url.Action("GetAllOrders", "Dashboard")',
+        //         type: "GET",
+        //         //data: { "Obj1": Obj1, "Obj2": Obj2, "ListOfObj1": ListOfObj1 },
+        //         // data: { "OrderId": basketorderid, "Basketid": basketid, "newitemid": newitem, "newitemname": newitemname, "newQty": newQty },
+        //         dataType: "json",
+        //         Cache: false,
+        //         success: function (result) {
+        //             if (result.success) {
+
+        //                 var count_All = $(".js-count-all");
+        //                 var count_Open = $(".js-count-open");
+        //                 var count_Process = $(".js-count-process");
+        //                 var count_Completed = $(".js-count-completed");
+        //                 var count_Defer = $(".js-count-defer");
+        //                 var count_Hold = $(".js-count-hold");
+        //                 var count_Closed = $(".js-count-closed");
+
+        //                 if (result.returnData.length > 0) {
+        //                     //alert("Start");
+        //                     result.returnData.forEach(function (item) {
+        //                         // alert(item.statusid);
+        //                         switch (item.statusid) {
+        //                             case 1:
+        //                                 //alert(item.statusid + ' : ' + item.total);
+        //                                 AllTotal += item.total;
+        //                                 count_Open.html(item.total);
+        //                                 break;
+        //                             case 2:
+        //                                 AllTotal += item.total;
+        //                                 count_Completed.html(item.total);
+        //                                 break;
+        //                             case 3:
+        //                                 AllTotal += item.total;
+        //                                 count_Process.html(item.total);
+        //                                 break;
+        //                             case 9:
+        //                                 AllTotal += item.total;
+        //                                 count_Hold.html(item.total);
+        //                                 break;
+        //                             case 12:
+        //                                 AllTotal += item.total;
+        //                                 count_Closed.html(item.total);
+        //                                 break;
+        //                             case 13:
+        //                                 AllTotal += item.total;
+        //                                 count_Defer.html(item.total);
+        //                                 break;
+        //                         }
+
+        //                     });
+        //                     count_All.html(AllTotal);
+
+        //                 }
+
+        //             } else {
+        //                 alert(result.message);
+        //             }
+        //         },
+        //         error: function (err) {
+        //             return false;
+        //         }
+        //     });
+        // }
+        // function GetCountOrders() {
+        //     ///////////
+        //     // يرجع بعدد الطلبات في كل حالة
+        //     ///
+        //     $.ajax({
+        //         url: '@Url.Action("GetCountOrders", "Dashboard")',
+        //         type: "GET",
+        //         //data: { "Obj1": Obj1, "Obj2": Obj2, "ListOfObj1": ListOfObj1 },
+        //         // data: { "OrderId": basketorderid, "Basketid": basketid, "newitemid": newitem, "newitemname": newitemname, "newQty": newQty },
+        //         dataType: "json",
+        //         Cache: false,
+        //         success: function (result) {
+        //             if (result.success) {
+
+        //                 var count_All = $(".js-count-all");
+        //                 var count_Open = $(".js-count-open");
+        //                 var count_Process = $(".js-count-process");
+        //                 var count_Completed = $(".js-count-completed");
+        //                 var count_Defer = $(".js-count-defer");
+        //                 var count_Hold = $(".js-count-hold");
+        //                 var count_Closed = $(".js-count-closed");
+
+        //                 var title_All = $(".js-title-all");
+        //                 var title_Open = $(".js-title-open");
+        //                 var title_Process = $(".js-title-process");
+        //                 var title_Completed = $(".js-title-completed");
+        //                 var title_Defer = $(".js-title-defer");
+        //                 var title_Hold = $(".js-title-hold");
+        //                 var title_Closed = $(".js-title-closed");
+
+        //                 var AllTotal = 0;
+        //                 ResetCounter();
+        //                 // 1	Open
+        //                 // 2	Completed
+        //                 // 3	In process
+        //                 // 4	ReOpen
+        //                 // 5	Manager
+        //                 // 6	Created
+        //                 // 7	assign to department
+        //                 // 8	assign to employee
+        //                 // 9	Hold
+        //                 // 10	SMS
+        //                 // 11	Remark
+        //                 // 12	Closed
+        //                 if (result.returnData.length > 0) {
+
+        //                     result.returnData.forEach(function (item) {
+
+        //                         switch (item.statusid) {
+        //                             case 1:
+        //                                 //alert(item.statusid + ' : ' + item.total);
+        //                                 title_Open.html("Pending");
+        //                                 //console.log("Pending");
+        //                                 AllTotal += item.total;
+        //                                 count_Open.html(item.total);
+        //                                 break;
+        //                             case 2:
+        //                                 AllTotal += item.total;
+        //                                 count_Completed.html(item.total);
+        //                                 break;
+        //                             case 3:
+        //                                 AllTotal += item.total;
+        //                                 count_Process.html(item.total);
+        //                                 break;
+        //                             case 9:
+        //                                 AllTotal += item.total;
+        //                                 count_Hold.html(item.total);
+        //                                 break;
+        //                             case 12:
+        //                                 AllTotal += item.total;
+        //                                 count_Closed.html(item.total);
+        //                                 break;
+        //                             case 13:
+        //                                 AllTotal += item.total;
+        //                                 count_Defer.html(item.total);
+        //                                 break;
+        //                         }
+
+        //                     });
+        //                     count_All.html(AllTotal);
+
+        //                 }
+        //                 // foreach()
+        //                 // alert(result.message);
+        //                 // alert(result.orderguid);
+        //                 //console.log(result.returnData);
+
+        //                 //if (result.returnData && result.returnData.age == 25) {
+        //                 //var =$".js-render-title-item"
+        //                 // var parentrow = ddlChangItemData.parents('.js-basketitem');
+        //                 // console.log(parentrow);
+        //                 // var h4itemname = parentrow.children('.js-render-title-item');
+
+
+        //             } else {
+        //                 alert(result.message);
+        //             }
+
+        //         },
+        //         error: function (err) {
+        //             return false;
+        //         }
+        //     });
+        //     ///
+        //     // رسم الجدول بدون تحدي قيمة للفلتر
+        //     drawtable(0);
+
+        // }
+        // function ResetCounter() {
+        //     /////////
+        //     // Reset value in Counter Squers
+
+        //     $(".js-count-all").html("0");
+        //     $(".js-count-open").html("0");
+        //     $(".js-count-process").html("0");
+        //     $(".js-count-completed").html("0");
+        //     $(".js-count-defer").html("0");
+        //     $(".js-count-hold").html("0");
+        //     $(".js-count-closed").html("0");
+        // }
+
+        // function drawtable(statusid) {
+        //     try {
+        //         // Destroy the existing DataTable, if it exists
+        //         if ($.fn.DataTable.isDataTable("#tabledashboard")) {
+        //             $("#tabledashboard").DataTable().destroy();
+        //         }
+
+        //         $("#tabledashboard").DataTable({
+        //             serverSide: true,
+        //             stateSave: false,
+        //             processing: true,
+        //             info: false,
+        //             searching: false,
+        //             lengthChange: false,
+        //             language: {
+        //                 processing: '<i class="fa fa-spinner fa-spin fa-3x fa-fw"></i><span class="sr-only">Loading...</span> '
+        //             },
+        //             ajax: {
+        //                 url: '@Url.Action("GetOrdersByStatus", "Dashboard")', //'/Dashboard/GetOrdersByStatus',
+        //                 type: 'POST',
+        //                 cache: false,
+        //                 data: { stid: statusid },
+        //             },
+        //             order: [[9, 'asc'], [10, 'desc'], [11, 'desc']],
+        //             // columnDefs: [{
+        //             //     targets: [0, 1, 2, 3, 4, 5, 6],
+        //             //     visible: false,
+        //             //     searchable: false
+        //             // }],
+        //             columns: [
+        //                 { "data": "order_cd", "name": "Order_cd", "data-label": "Order_cd" },
+        //                 { "data": "currentDate", "name": "CurrentDate", "data-label": "CurrentDate" },
+        //                 { "data": "locationName", "name": "LocationName", "data-label": "LocationName" },
+        //                 { "data": "depName", "name": "DepName", "data-label": "DepName" },
+        //                 { "data": "createName", "name": "CreateName", "data-label": "CreateName" },
+        //                 // {
+        //                 //     "name": "CreateName", "render": function (data, type, row) {
+        //                 //         var PathFullPic = "";
+        //                 //         var createName1 = "";
+
+        //                 //         if (row.createName != "" && row.createName != null && row.createName != undefined) {
+        //                 //             console.log(row.createName);
+        //                 //             createName1 = row.createName;
+
+        //                 //             if (row.createPic == "" || row.createPic == null || row.createPic == undefined) {
+        //                 //                 //PathFullPic = "../../Images/avatar/bg-man.jpg";
+        //                 //             }
+        //                 //             else {
+        //                 //                 PathFullPic = "../../companies/" + row.companyFolder + "/images/employee/" + row.createPic;
+        //                 //             }
+
+        //                 //         }
+
+
+        //                 //         return `<div class="user-card d-flex align-items-center">
+        //                 //                 <div class="image me-1"><img src="${PathFullPic}" alt="" width = "25"></div>
+        //                 //                         <div class="text">${createName1}</div>
+        //                 //                 </div>`;
+        //                 //                 // return `<div class="user-card d-flex align-items-center">
+        //                 //                 //                 <div class="text">${row.createName}</div>
+        //                 //                 // </div>`;
+        //                 //     }
+        //                 // },
+        //                 { "data": "assignName", "name": "AssignName" },
+        //                 // {
+        //                 //     "name": "AssignName", "render": function (data, type, row) {
+        //                 //         var PathFullPic = "";
+        //                 //         var assignName = "";
+
+        //                 //         if (row.assignName != "" || row.assignName != null || row.assignName != undefined) {
+        //                 //             assignName = row.assignName;
+
+        //                 //             if (row.assignPic == "" || row.assignPic == null || row.assignPic == undefined) {
+        //                 //                 //PathFullPic = "../../Images/avatar/bg-man.jpg";
+        //                 //             }
+        //                 //             else {
+
+        //                 //                 PathFullPic = "../../companies/" + row.companyFolder + "/images/employee/" + row.assignPic;
+        //                 //             }
+        //                 //         }
+        //                 //         return `<div class="user-card d-flex align-items-center">
+        //                 //                 <div class="image me-1"><img src="${PathFullPic}" alt="" width = "25"></div>
+        //                 //                 <div class="text">${assignName}</div>
+        //                 //                 </div>`;
+
+        //                 //     }
+        //                 // },
+        //                 {
+        //                     "name": "RunTime", "render": function (data, type, row) {
+        //                         var runTimeDesc = '';
+        //                         if (row.daysDifference == 1) {
+        //                             runTimeDesc = `${row.daysDifference} Day ${row.remainingHours} H`;
+        //                         }
+        //                         else if (row.daysDifference < 1) {
+        //                             runTimeDesc = `${row.remainingHours} H`;
+        //                         }
+        //                         else {
+        //                             runTimeDesc = `${row.daysDifference} Days ${row.remainingHours} H`;
+        //                         }
+        //                         return runTimeDesc;
+        //                     }
+        //                 },
+        //                 {
+        //                     "name": "StatusName", "render": function (data, type, row) {
+
+        //                         switch (row.statusId) {
+        //                             case 1:
+        //                                 return `<a class="badge bg-open text-dark rounded-pill" data-href="/DashBoard/Details/${row.orderID}" href="/DashBoard/Details/${row.orderID}" >
+        //                                                                                                                                             ${row.statusName}
+        //                                                                                                                         </a>`;
+        //                                 break;
+        //                             case 2:
+
+        //                                 return `<a class="badge bg-Completed text-dark rounded-pill" data-href="/DashBoard/Details/${row.orderID}" href="/DashBoard/Details/${row.orderID}">
+        //                                                                                                                                     ${row.statusName}
+        //                                                                                                                             </a>`;
+        //                                 break;
+        //                             case 3:
+        //                                 return `<a class="badge bg-process text-dark rounded-pill" data-href="/DashBoard/Details/${row.orderID}" href="/DashBoard/Details/${row.orderID}">
+        //                                                                                                                                             ${row.statusName}
+        //                                                                                                                         </a>`;
+        //                                 break;
+        //                             case 9:
+        //                                 return `<a class="badge bg-Hold text-dark rounded-pill" data-href="/DashBoard/Details/${row.orderID}" href="/DashBoard/Details/${row.orderID}">
+        //                                                                                                                                             ${row.statusName}
+        //                                                                                                                         </a>`;
+        //                                 break;
+        //                             case 12:
+        //                                 return `<a class="badge bg-Closed text-dark rounded-pill" data-href="/DashBoard/Details/${row.orderID}" href="/DashBoard/Details/${row.orderID}">
+        //                                                                                                                                             ${row.statusName}
+        //                                                                                                                         </a>`;
+        //                                 break;
+        //                             case 13:
+        //                                 return `<a class="badge bg-defer text-dark rounded-pill" data-href="/DashBoard/Details/${row.orderID}" href="/DashBoard/Details/${row.orderID}">
+        //                                                                                                                                             ${row.statusName}
+        //                                                                                                                         </a>`;
+        //                                 break;
+        //                         }
+        //                     }
+        //                 },
+
+        //                 { "data": "orderID", "name": "OrderID", "data-label": "OrderID", "className": "d-none", "visible": false, "searchable": false },
+        //                 { "data": "statusSortShow", "name": "StatusSortShow", "className": "d-none", "visible": false, "searchable": false },
+        //                 { "data": "dtCraeteStamp", "name": "dtCraeteStamp", "className": "d-none", "visible": false, "searchable": false },
+        //                 { "data": "delayTime", "name": "DelayTime", "className": "d-none", "visible": false, "searchable": false },
+
+
+        //                 //{ "data": "dtCraete", "name": "dtCraete", "className": "d-none", "visible": false, "searchable": false },
+        //                 //{ "data": "locationID", "name": "LocationID", "className": "d-none", "visible": false, "searchable": false },
+        //                 //{ "data": "departmentID", "name": "DepartmentID", "className": "d-none", "visible": false, "searchable": false },
+        //                 //{ "data": "userIDAssign", "name": "UserIDAssign", "className": "d-none", "visible": false, "searchable": false },
+        //                 //{ "data": "statusId", "name": "StatusId", "className": "d-none", "visible": false, "searchable": false },
+        //                 //{ "data": "userIDCreate", "name": "UserIDCreate", "className": "d-none", "visible": false, "searchable": false },
+
+        //             ],
+        //             createdRow: function (row, data, dataIndex) {
+        //                 $(row).find('td').each(function (index) {
+        //                     $(this).attr('data-label', $('#tabledashboard th').eq(index).text());
+        //                 });
+        //             }
+        //         });
+        //         //GetAllOrders();
+        //     }
+
+        //     catch (err) {
+        //         //console.log("10");
+        //         alert(err.message);
+        //         //console.error(err);
+
+        //     }
+
+        // }
+
+        // function DashboardFilter() {
+        //     try {
+
+        //         var objData = {};
+        //         var statusOpen = 0;
+        //         var statusHold = 0;
+        //         var statusClosed = 0;
+        //         var statusInprocess = 0;
+        //         var statusCompleted = 0;
+        //         var statusDefer = 0;
+
+        //         // Check if the element has the class 'example-class'
+        //         if ($("#StatusOpen").hasClass('active')) {
+        //             statusOpen = 1;
+        //         }
+        //         if ($("#StatusHold").hasClass('active')) {
+        //             statusHold = 1;
+        //         }
+        //         if ($("#StatusClosed").hasClass('active')) {
+        //             statusClosed = 1;
+        //         }
+        //         if ($("#StatusInprocess").hasClass('active')) {
+        //             statusInprocess = 1;
+        //         }
+        //         if ($("#StatusCompleted").hasClass('active')) {
+        //             statusCompleted = 1;
+        //         }
+        //         if ($("#StatusDefer").hasClass('active')) {
+        //             statusDefer = 1;
+        //         }
+        //         //alert("StatusOpen:" + StatusOpen);
+        //         var txtOrdernumberFrom = $("#txtOrdernumberFrom").val();
+        //         var txtOrdernumberTo = $("#txtOrdernumberTo").val();
+        //         // var txtLocationId = $("#txtLocationId").val();
+        //         // var txtRuntimeFrom = $("#txtRuntimeFrom").val();
+        //         // var txtRuntimeTo = $("#txtRuntimeTo").val();
+        //         var txtDateFrom = $("#txtDateFrom").val();
+        //         var txtDateTo = $("#txtDateTo").val();
+
+        //         if (txtOrdernumberFrom == null || txtOrdernumberFrom == undefined) {
+        //             txtOrdernumberFrom = ""
+        //         }
+        //         if (txtOrdernumberTo == null || txtOrdernumberTo == undefined) {
+        //             txtOrdernumberTo = ""
+        //         }
+        //         // if (txtLocationId == null || txtLocationId == undefined) {
+        //         //     txtLocationId = ""
+        //         // }
+        //         // if (txtRuntimeFrom == null || txtRuntimeFrom == undefined) {
+        //         //     txtRuntimeFrom = ""
+        //         // }
+        //         // if (txtRuntimeTo == null || txtRuntimeTo == undefined) {
+        //         //     txtRuntimeTo = ""
+        //         // }
+        //         if (txtDateFrom == null || txtDateFrom == undefined) {
+        //             txtDateFrom = ""
+        //         }
+        //         if (txtDateTo == null || txtDateTo == undefined) {
+        //             txtDateTo = ""
+        //         }
+
+        //         objData = {
+        //             StatusOpen: statusOpen,
+        //             StatusHold: statusHold,
+        //             StatusClosed: statusClosed,
+        //             StatusInprocess: statusInprocess,
+        //             StatusCompleted: statusCompleted,
+        //             StatusDefer: StatusDefer,
+        //             OrdernumberFrom: txtOrdernumberFrom,
+        //             OrdernumberTo: txtOrdernumberTo,
+        //             // RuntimeFrom: txtRuntimeFrom,
+        //             // RuntimeTo: txtRuntimeTo,
+        //             DateFrom: txtDateFrom,
+        //             DateTo: txtDateTo,
+        //             ///LocationId: txtLocationId
+        //             //LocationName :
+        //         }
+
+        //         var jsonData = JSON.stringify(objData);
+
+        //         // Destroy the existing DataTable, if it exists
+        //         if ($.fn.DataTable.isDataTable("#tabledashboard")) {
+        //             $("#tabledashboard").DataTable().destroy();
+        //         }
+
+        //         $("#tabledashboard").DataTable({
+        //             serverSide: true,
+        //             stateSave: false,
+        //             processing: true,
+        //             info: false,
+        //             searching: false,
+        //             lengthChange: false,
+        //             language: {
+        //                 processing: '<i class="fa fa-spinner fa-spin fa-3x fa-fw"></i><span class="sr-only">Loading...</span> '
+        //             },
+        //             ajax: {
+        //                 url: '/Dashboard/FilterDailogApply',
+        //                 type: 'POST',
+        //                 cache: false,
+        //                 data: { "objData": jsonData },
+        //             },
+        //             order: [[9, 'asc'], [10, 'desc'], [11, 'desc']],
+        //             // columnDefs: [{
+        //             //     targets: [0, 1, 2, 3, 4, 5, 6],
+        //             //     visible: false,
+        //             //     searchable: false
+        //             // }],
+        //             columns: [
+        //                 { "data": "order_cd", "name": "Order_cd", "data-label": "OrderID" },
+        //                 { "data": "currentDate", "name": "CurrentDate" },
+        //                 { "data": "locationName", "name": "LocationName" },
+        //                 { "data": "depName", "name": "DepName" },
+        //                 { "data": "createName", "name": "CreateName" },
+        //                 // {
+        //                 //     "name": "CreateName", "render": function (data, type, row) {
+        //                 //         var PathFullPic = "";
+        //                 //         var createName1 = "";
+
+        //                 //         if (row.createName != "" && row.createName != null && row.createName != undefined) {
+        //                 //             console.log(row.createName);
+        //                 //             createName1 = row.createName;
+
+        //                 //             if (row.createPic == "" || row.createPic == null || row.createPic == undefined) {
+        //                 //                 //PathFullPic = "../../Images/avatar/bg-man.jpg";
+        //                 //             }
+        //                 //             else {
+        //                 //                 PathFullPic = "../../companies/" + row.companyFolder + "/images/employee/" + row.createPic;
+        //                 //             }
+
+        //                 //         }
+
+
+        //                 //         return `<div class="user-card d-flex align-items-center">
+        //                 //                 <div class="image me-1"><img src="${PathFullPic}" alt="" width = "25"></div>
+        //                 //                         <div class="text">${createName1}</div>
+        //                 //                 </div>`;
+        //                 //                 // return `<div class="user-card d-flex align-items-center">
+        //                 //                 //                 <div class="text">${row.createName}</div>
+        //                 //                 // </div>`;
+        //                 //     }
+        //                 // },
+        //                 { "data": "assignName", "name": "AssignName" },
+        //                 // {
+        //                 //     "name": "AssignName", "render": function (data, type, row) {
+        //                 //         var PathFullPic = "";
+        //                 //         var assignName = "";
+
+        //                 //         if (row.assignName != "" || row.assignName != null || row.assignName != undefined) {
+        //                 //             assignName = row.assignName;
+
+        //                 //             if (row.assignPic == "" || row.assignPic == null || row.assignPic == undefined) {
+        //                 //                 //PathFullPic = "../../Images/avatar/bg-man.jpg";
+        //                 //             }
+        //                 //             else {
+
+        //                 //                 PathFullPic = "../../companies/" + row.companyFolder + "/images/employee/" + row.assignPic;
+        //                 //             }
+        //                 //         }
+        //                 //         return `<div class="user-card d-flex align-items-center">
+        //                 //                 <div class="image me-1"><img src="${PathFullPic}" alt="" width = "25"></div>
+        //                 //                 <div class="text">${assignName}</div>
+        //                 //                 </div>`;
+
+        //                 //     }
+        //                 // },
+        //                 {
+        //                     "name": "RunTime", "render": function (data, type, row) {
+        //                         var runTimeDesc = '';
+        //                         if (row.daysDifference == 1) {
+        //                             runTimeDesc = `${row.daysDifference} Day ${row.remainingHours} H`;
+        //                         }
+        //                         else if (row.daysDifference < 1) {
+        //                             runTimeDesc = `${row.remainingHours} H`;
+        //                         }
+        //                         else {
+        //                             runTimeDesc = `${row.daysDifference} Days ${row.remainingHours} H`;
+        //                         }
+        //                         return runTimeDesc;
+        //                     }
+        //                 },
+        //                 {
+        //                     "name": "StatusName", "render": function (data, type, row) {
+
+        //                         switch (row.statusId) {
+        //                             case 1:
+        //                                 return `<a class="badge bg-open text-dark rounded-pill" data-href="/DashBoard/Details/${row.orderID}" href="/DashBoard/Details/${row.orderID}" >
+        //                                                                                                                                                     ${row.statusName}
+        //                                                                                                                                 </a>`;
+        //                                 break;
+        //                             case 2:
+
+        //                                 return `<a class="badge bg-Completed text-dark rounded-pill" data-href="/DashBoard/Details/${row.orderID}" href="/DashBoard/Details/${row.orderID}">
+        //                                                                                                                                             ${row.statusName}
+        //                                                                                                                                     </a>`;
+        //                                 break;
+        //                             case 3:
+        //                                 return `<a class="badge bg-process text-dark rounded-pill" data-href="/DashBoard/Details/${row.orderID}" href="/DashBoard/Details/${row.orderID}">
+        //                                                                                                                                                     ${row.statusName}
+        //                                                                                                                                 </a>`;
+        //                                 break;
+        //                             case 9:
+        //                                 return `<a class="badge bg-Hold text-dark rounded-pill" data-href="/DashBoard/Details/${row.orderID}" href="/DashBoard/Details/${row.orderID}">
+        //                                                                                                                                                     ${row.statusName}
+        //                                                                                                                                 </a>`;
+        //                                 break;
+        //                             case 12:
+        //                                 return `<a class="badge bg-Closed text-dark rounded-pill" data-href="/DashBoard/Details/${row.orderID}" href="/DashBoard/Details/${row.orderID}">
+        //                                                                                                                                                     ${row.statusName}
+        //                                                                                                                                 </a>`;
+        //                                 break;
+        //                             case 13:
+        //                                 return `<a class="badge bg-defer text-dark rounded-pill" data-href="/DashBoard/Details/${row.orderID}" href="/DashBoard/Details/${row.orderID}">
+        //                                                                                                                                                     ${row.statusName}
+        //                                                                                                                                 </a>`;
+        //                                 break;
+        //                         }
+        //                     }
+        //                 },
+
+        //                 { "data": "orderID", "name": "OrderID", "data-label": "OrderID", "className": "d-none", "visible": false, "searchable": false },
+        //                 { "data": "statusSortShow", "name": "StatusSortShow", "className": "d-none", "visible": false, "searchable": false },
+        //                 { "data": "dtCraeteStamp", "name": "dtCraeteStamp", "className": "d-none", "visible": false, "searchable": false },
+        //                 { "data": "delayTime", "name": "DelayTime", "className": "d-none", "visible": false, "searchable": false },
+        //                 // { "data": "dtCraete", "name": "dtCraete", "className": "d-none", "visible": false, "searchable": false },
+        //                 // { "data": "locationID", "name": "LocationID", "className": "d-none", "visible": false, "searchable": false },
+        //                 // { "data": "departmentID", "name": "DepartmentID", "className": "d-none", "visible": false, "searchable": false },
+        //                 // { "data": "userIDAssign", "name": "UserIDAssign", "className": "d-none", "visible": false, "searchable": false },
+        //                 // { "data": "statusId", "name": "StatusId", "className": "d-none", "visible": false, "searchable": false },
+        //                 // { "data": "userIDCreate", "name": "UserIDCreate", "className": "d-none", "visible": false, "searchable": false },
+
+        //             ],
+
+        //         });
+        //         $("#exampleModal").modal("hide");
+        //     }
+
+        //     catch (err) {
+        //         //console.log("10");
+        //         alert(err.message);
+        //         //console.error(err);
+        //     }
+
+        // }
+        // function DashboardSearch() {
+        //     try {
+
+        //         var objData = {};
+
+        //         var txtSearch = $("#txtSearch").val();
+
+        //         //alert("1");
+        //         if (txtSearch == null || txtSearch == undefined) {
+        //             GetCountOrders();
+        //             return
+        //         }
+        //         if (txtSearch.length <= 2) {
+        //             GetCountOrders();
+        //             return
+        //         }
+
+        //         objData = {
+        //             textSearch: txtSearch
+
+        //         }
+
+        //         var jsonData = JSON.stringify(objData);
+
+        //         // Destroy the existing DataTable, if it exists
+        //         if ($.fn.DataTable.isDataTable("#tabledashboard")) {
+        //             $("#tabledashboard").DataTable().destroy();
+        //         }
+
+        //         $("#tabledashboard").DataTable({
+        //             serverSide: true,
+        //             stateSave: false,
+        //             processing: true,
+        //             info: false,
+        //             searching: false,
+        //             lengthChange: false,
+        //             language: {
+        //                 processing: '<i class="fa fa-spinner fa-spin fa-3x fa-fw"></i><span class="sr-only">Loading...</span> '
+        //             },
+        //             ajax: {
+        //                 url: '/Dashboard/SearchOrders',
+        //                 type: 'POST',
+        //                 cache: false,
+        //                 data: { "objData": jsonData },
+        //             },
+        //             order: [[9, 'asc'], [10, 'desc'], [11, 'desc']],
+        //             // columnDefs: [{
+        //             //     targets: [0, 1, 2, 3, 4, 5, 6],
+        //             //     visible: false,
+        //             //     searchable: false
+        //             // }],
+        //             columns: [
+        //                 { "data": "order_cd", "name": "Order_cd" },
+        //                 { "data": "currentDate", "name": "CurrentDate" },
+        //                 { "data": "locationName", "name": "LocationName" },
+        //                 { "data": "depName", "name": "DepName" },
+        //                 { "data": "createName", "name": "CreateName" },
+        //                 // {
+        //                 //     "name": "CreateName", "render": function (data, type, row) {
+        //                 //         var PathFullPic = "";
+        //                 //         var createName1 = "";
+
+        //                 //         if (row.createName != "" && row.createName != null && row.createName != undefined) {
+        //                 //             console.log(row.createName);
+        //                 //             createName1 = row.createName;
+
+        //                 //             if (row.createPic == "" || row.createPic == null || row.createPic == undefined) {
+        //                 //                 //PathFullPic = "../../Images/avatar/bg-man.jpg";
+        //                 //             }
+        //                 //             else {
+        //                 //                 PathFullPic = "../../companies/" + row.companyFolder + "/images/employee/" + row.createPic;
+        //                 //             }
+
+        //                 //         }
+
+
+        //                 //         return `<div class="user-card d-flex align-items-center">
+        //                 //                 <div class="image me-1"><img src="${PathFullPic}" alt="" width = "25"></div>
+        //                 //                         <div class="text">${createName1}</div>
+        //                 //                 </div>`;
+        //                 //                 // return `<div class="user-card d-flex align-items-center">
+        //                 //                 //                 <div class="text">${row.createName}</div>
+        //                 //                 // </div>`;
+        //                 //     }
+        //                 // },
+        //                 { "data": "assignName", "name": "AssignName" },
+        //                 // {
+        //                 //     "name": "AssignName", "render": function (data, type, row) {
+        //                 //         var PathFullPic = "";
+        //                 //         var assignName = "";
+
+        //                 //         if (row.assignName != "" || row.assignName != null || row.assignName != undefined) {
+        //                 //             assignName = row.assignName;
+
+        //                 //             if (row.assignPic == "" || row.assignPic == null || row.assignPic == undefined) {
+        //                 //                 //PathFullPic = "../../Images/avatar/bg-man.jpg";
+        //                 //             }
+        //                 //             else {
+
+        //                 //                 PathFullPic = "../../companies/" + row.companyFolder + "/images/employee/" + row.assignPic;
+        //                 //             }
+        //                 //         }
+        //                 //         return `<div class="user-card d-flex align-items-center">
+        //                 //                 <div class="image me-1"><img src="${PathFullPic}" alt="" width = "25"></div>
+        //                 //                 <div class="text">${assignName}</div>
+        //                 //                 </div>`;
+
+        //                 //     }
+        //                 // },
+        //                 {
+        //                     "name": "RunTime", "render": function (data, type, row) {
+        //                         var runTimeDesc = '';
+        //                         if (row.daysDifference == 1) {
+        //                             runTimeDesc = `${row.daysDifference} Day ${row.remainingHours} H`;
+        //                         }
+        //                         else if (row.daysDifference < 1) {
+        //                             runTimeDesc = `${row.remainingHours} H`;
+        //                         }
+        //                         else {
+        //                             runTimeDesc = `${row.daysDifference} Days ${row.remainingHours} H`;
+        //                         }
+        //                         return runTimeDesc;
+        //                     }
+        //                 },
+        //                 {
+        //                     "name": "StatusName", "render": function (data, type, row) {
+
+        //                         switch (row.statusId) {
+        //                             case 1:
+        //                                 return `<a class="badge bg-open text-dark rounded-pill" data-href="/DashBoard/Details/${row.orderID}" href="/DashBoard/Details/${row.orderID}" >
+        //                                                                                                                                                             ${row.statusName}
+        //                                                                                                                                         </a>`;
+        //                                 break;
+        //                             case 2:
+
+        //                                 return `<a class="badge bg-Completed text-dark rounded-pill" data-href="/DashBoard/Details/${row.orderID}" href="/DashBoard/Details/${row.orderID}">
+        //                                                                                                                                                     ${row.statusName}
+        //                                                                                                                                             </a>`;
+        //                                 break;
+        //                             case 3:
+        //                                 return `<a class="badge bg-process text-dark rounded-pill" data-href="/DashBoard/Details/${row.orderID}" href="/DashBoard/Details/${row.orderID}">
+        //                                                                                                                                                             ${row.statusName}
+        //                                                                                                                                         </a>`;
+        //                                 break;
+        //                             case 9:
+        //                                 return `<a class="badge bg-Hold text-dark rounded-pill" data-href="/DashBoard/Details/${row.orderID}" href="/DashBoard/Details/${row.orderID}">
+        //                                                                                                                                                             ${row.statusName}
+        //                                                                                                                                         </a>`;
+        //                                 break;
+        //                             case 12:
+        //                                 return `<a class="badge bg-Closed text-dark rounded-pill" data-href="/DashBoard/Details/${row.orderID}" href="/DashBoard/Details/${row.orderID}">
+        //                                                                                                                                                             ${row.statusName}
+        //                                                                                                                                         </a>`;
+        //                                 break;
+        //                             case 13:
+        //                                 return `<a class="badge bg-defer text-dark rounded-pill" data-href="/DashBoard/Details/${row.orderID}" href="/DashBoard/Details/${row.orderID}">
+        //                                                                                                                                                             ${row.statusName}
+        //                                                                                                                                         </a>`;
+        //                                 break;
+        //                         }
+        //                     }
+        //                 },
+
+        //                 { "data": "orderID", "name": "OrderID", "className": "d-none", "visible": false, "searchable": false },
+        //                 { "data": "statusSortShow", "name": "StatusSortShow", "className": "d-none", "visible": false, "searchable": false },
+        //                 { "data": "dtCraeteStamp", "name": "dtCraeteStamp", "className": "d-none", "visible": false, "searchable": false },
+        //                 { "data": "delayTime", "name": "DelayTime", "className": "d-none", "visible": false, "searchable": false },
+
+        //                 // { "data": "dtCraete", "name": "dtCraete", "className": "d-none", "visible": false, "searchable": false },
+        //                 // { "data": "locationID", "name": "LocationID", "className": "d-none", "visible": false, "searchable": false },
+        //                 // { "data": "departmentID", "name": "DepartmentID", "className": "d-none", "visible": false, "searchable": false },
+        //                 // { "data": "userIDAssign", "name": "UserIDAssign", "className": "d-none", "visible": false, "searchable": false },
+        //                 // { "data": "statusId", "name": "StatusId", "className": "d-none", "visible": false, "searchable": false },
+        //                 // { "data": "userIDCreate", "name": "UserIDCreate", "className": "d-none", "visible": false, "searchable": false },
+
+        //             ],
+
+        //         });
+        //         //GetAllOrders();
+        //     }
+
+        //     catch (err) {
+        //         //console.log("10");
+        //         alert(err.message);
+        //         //console.error(err);
+
+        //     }
+
+        // }
+        // function resetform() {
+        //     $("#txtOrdernumberFrom").val("");
+        //     $("#txtOrdernumberTo").val("");
+
+        //     $("#txtDateFrom").val("");
+        //     $("#txtDateTo").val("");
+
+        //     $('.js-status').each(function () {
+        //         $(this).removeClass('active');
+        //     });
+        //     //$('#exampleElement').removeClass('exampleClass');
+
+
+        // }
+    </script>
+}

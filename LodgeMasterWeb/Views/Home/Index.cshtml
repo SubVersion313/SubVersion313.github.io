@@ -1,0 +1,50 @@
+﻿@{
+    ViewData["Title"] = "Home Page";
+
+}
+
+<div class="master-home">
+    <nav class="navbar navbar-expand-lg">
+        <div class="container">
+            <a class="navbar-brand" href="#"> <img src="~/assets/images/Logo.png" alt="logo"></a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation"><span class="navbar-toggler-icon"></span></button>
+            <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
+                    <li class="nav-item"><a class="nav-link active" aria-current="page" href="#">Home</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#">Services</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#">Contact</a></li>
+                    <li class="nav-item"><a class="nav-link" asp-area="Identity" asp-page="/Account/Login">Login</a></li>
+                    @* <li class="nav-item"><a class="nav-link" asp-controller="userlogin" asp-action="Index">Login</a></li> *@
+                </ul>
+            </div>
+        </div>
+    </nav>
+    <div class="content-master-page">
+        <div class="text-title">Experience <span class="color">indulgent luxury </span>At our 5-star hotel</div><a href="">  Explore our Services</a>
+    </div>
+</div>
+
+<div class="modal fade model-login" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h1 class="modal-title fs-5 d-flex justify-content-center w-100" id="exampleModalLabel">
+                    <div class="icon me-2"><i class="fa-solid fa-user-plus"></i></div>
+                    <div class="text">Sign In</div>
+                </h1>
+            </div>
+            <div class="modal-body d-flex">
+                <div class="col-6">
+                    <div class="card-sign">
+                        <div class="image"> <img src="~/assets/images/Svg/Admin.svg" alt=""></div><a href="login.html">Admin</a>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="card-sign">
+                        <div class="image"> <img src="~/assets/images/Svg/employe.svg" alt=""></div><a href="login.html">Employee</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
